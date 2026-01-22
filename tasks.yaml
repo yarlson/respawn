@@ -107,6 +107,7 @@ tasks:
     verify:
       - ["go", "build", "./..."]
       - ["go", "test", "./..."]
+      - ["golangci-lint", "run", "./...", "--fix"]
     labels:
       area: infra
       priority: P0
@@ -137,6 +138,7 @@ tasks:
     verify:
       - ["go", "test", "./..."]
       - ["go", "build", "./..."]
+      - ["golangci-lint", "run", "./...", "--fix"]
     labels:
       area: infra
       priority: P0
@@ -169,6 +171,7 @@ tasks:
       - "`go test ./...` passes"
     verify:
       - ["go", "test", "./..."]
+      - ["golangci-lint", "run", "./...", "--fix"]
     labels:
       area: infra
       priority: P0
@@ -198,6 +201,7 @@ tasks:
       - "`go test ./...` passes"
     verify:
       - ["go", "test", "./..."]
+      - ["golangci-lint", "run", "./...", "--fix"]
     labels:
       area: infra
       priority: P0
@@ -231,6 +235,7 @@ tasks:
       - "`go test ./...` passes"
     verify:
       - ["go", "test", "./..."]
+      - ["golangci-lint", "run", "./...", "--fix"]
     labels:
       area: infra
       priority: P0
@@ -238,7 +243,12 @@ tasks:
   - id: respawn-config-merge-precedence
     title: "Implement CLI > config > defaults precedence merge"
     parentId: respawn-epic-config
-    dependsOn: ["respawn-config-path-and-parse", "respawn-add-run-command-skeleton", "respawn-add-decompose-command-skeleton"]
+    dependsOn:
+      [
+        "respawn-config-path-and-parse",
+        "respawn-add-run-command-skeleton",
+        "respawn-add-decompose-command-skeleton",
+      ]
     description: |
       Implement a merge layer so runner/decomposer can produce an effective config.
 
@@ -260,6 +270,7 @@ tasks:
       - "`go test ./...` passes"
     verify:
       - ["go", "test", "./..."]
+      - ["golangci-lint", "run", "./...", "--fix"]
     labels:
       area: infra
       priority: P0
@@ -292,6 +303,7 @@ tasks:
       - "`go test ./...` passes"
     verify:
       - ["go", "test", "./..."]
+      - ["golangci-lint", "run", "./...", "--fix"]
     labels:
       area: core
       priority: P0
@@ -324,6 +336,7 @@ tasks:
       - "`go test ./...` passes"
     verify:
       - ["go", "test", "./..."]
+      - ["golangci-lint", "run", "./...", "--fix"]
     labels:
       area: core
       priority: P0
@@ -352,6 +365,7 @@ tasks:
       - "`go test ./...` passes"
     verify:
       - ["go", "test", "./..."]
+      - ["golangci-lint", "run", "./...", "--fix"]
     labels:
       area: core
       priority: P0
@@ -382,6 +396,7 @@ tasks:
       - "`go test ./...` passes"
     verify:
       - ["go", "test", "./..."]
+      - ["golangci-lint", "run", "./...", "--fix"]
     labels:
       area: infra
       priority: P0
@@ -416,6 +431,7 @@ tasks:
       - "`go test ./...` passes"
     verify:
       - ["go", "test", "./..."]
+      - ["golangci-lint", "run", "./...", "--fix"]
     labels:
       area: infra
       priority: P0
@@ -447,6 +463,7 @@ tasks:
       - "`go test ./...` passes"
     verify:
       - ["go", "test", "./..."]
+      - ["golangci-lint", "run", "./...", "--fix"]
     labels:
       area: infra
       priority: P0
@@ -475,6 +492,7 @@ tasks:
       - "`go test ./...` passes"
     verify:
       - ["go", "test", "./..."]
+      - ["golangci-lint", "run", "./...", "--fix"]
     labels:
       area: infra
       priority: P0
@@ -509,6 +527,7 @@ tasks:
       - "`go test ./...` passes"
     verify:
       - ["go", "test", "./..."]
+      - ["golangci-lint", "run", "./...", "--fix"]
     labels:
       area: infra
       priority: P0
@@ -546,6 +565,7 @@ tasks:
       - "`go test ./...` passes"
     verify:
       - ["go", "test", "./..."]
+      - ["golangci-lint", "run", "./...", "--fix"]
     labels:
       area: infra
       priority: P0
@@ -577,6 +597,7 @@ tasks:
       - "`go test ./...` passes"
     verify:
       - ["go", "test", "./..."]
+      - ["golangci-lint", "run", "./...", "--fix"]
     labels:
       area: core
       priority: P0
@@ -584,7 +605,12 @@ tasks:
   - id: respawn-opencode-backend-run-and-session
     title: "Implement OpenCode backend execution with model/variant and best-effort session reuse"
     parentId: respawn-epic-backends
-    dependsOn: ["respawn-backend-interface-and-types", "respawn-config-merge-precedence", "respawn-run-artifacts-layout"]
+    dependsOn:
+      [
+        "respawn-backend-interface-and-types",
+        "respawn-config-merge-precedence",
+        "respawn-run-artifacts-layout",
+      ]
     description: |
       Implement OpenCode backend adapter by shelling out to `opencode run`.
 
@@ -614,6 +640,7 @@ tasks:
       - "internal/backends/opencode/opencode_test.go covers command construction and session flag behavior (no real opencode invocation required)"
     verify:
       - ["go", "test", "./..."]
+      - ["golangci-lint", "run", "./...", "--fix"]
     labels:
       area: core
       priority: P0
@@ -621,7 +648,12 @@ tasks:
   - id: respawn-claude-backend-run-and-flag-detect
     title: "Implement Claude Code backend execution with best-effort continue/resume detection"
     parentId: respawn-epic-backends
-    dependsOn: ["respawn-backend-interface-and-types", "respawn-config-merge-precedence", "respawn-run-artifacts-layout"]
+    dependsOn:
+      [
+        "respawn-backend-interface-and-types",
+        "respawn-config-merge-precedence",
+        "respawn-run-artifacts-layout",
+      ]
     description: |
       Implement Claude Code backend adapter by shelling out to `claude`.
 
@@ -647,6 +679,7 @@ tasks:
       - "internal/backends/claude/claude_test.go covers command construction and flag-detection parsing"
     verify:
       - ["go", "test", "./..."]
+      - ["golangci-lint", "run", "./...", "--fix"]
     labels:
       area: core
       priority: P0
@@ -683,6 +716,7 @@ tasks:
       - "`go test ./...` passes"
     verify:
       - ["go", "test", "./..."]
+      - ["golangci-lint", "run", "./...", "--fix"]
     labels:
       area: core
       priority: P0
@@ -690,7 +724,16 @@ tasks:
   - id: respawn-runner-preflight-and-summary
     title: "Implement runner preflight: repo root, tasks.yaml presence, .gitignore check, counts summary"
     parentId: respawn-epic-runner
-    dependsOn: ["respawn-add-run-command-skeleton", "respawn-git-repo-root-and-dirty-check", "respawn-gitignore-validation-and-update", "respawn-tasks-parse-respawn-tasks-yaml", "respawn-config-merge-precedence", "respawn-run-artifacts-layout", "respawn-resume-state-store"]
+    dependsOn:
+      [
+        "respawn-add-run-command-skeleton",
+        "respawn-git-repo-root-and-dirty-check",
+        "respawn-gitignore-validation-and-update",
+        "respawn-tasks-parse-respawn-tasks-yaml",
+        "respawn-config-merge-precedence",
+        "respawn-run-artifacts-layout",
+        "respawn-resume-state-store",
+      ]
     description: |
       Implement runner startup logic and summary output (quiet mode baseline).
 
@@ -718,6 +761,7 @@ tasks:
       - "internal/run/runner_test.go covers: dirty clean rules, missing tasks.yaml error, ignore-missing detection"
     verify:
       - ["go", "test", "./..."]
+      - ["golangci-lint", "run", "./...", "--fix"]
     labels:
       area: core
       priority: P0
@@ -751,6 +795,7 @@ tasks:
       - "`go test ./...` passes"
     verify:
       - ["go", "test", "./..."]
+      - ["golangci-lint", "run", "./...", "--fix"]
     labels:
       area: core
       priority: P0
@@ -758,7 +803,18 @@ tasks:
   - id: respawn-runner-task-execution-and-savepoint
     title: "Execute one runnable task: prompt backend, run verify, update status, commit save point"
     parentId: respawn-epic-runner
-    dependsOn: ["respawn-runner-preflight-and-summary", "respawn-tasks-dag-runnable-selection", "respawn-tasks-status-update", "respawn-git-savepoint-commit", "respawn-backend-interface-and-types", "respawn-opencode-backend-run-and-session", "respawn-claude-backend-run-and-flag-detect", "respawn-prompt-templates-and-builders", "respawn-runner-verify-command-executor"]
+    dependsOn:
+      [
+        "respawn-runner-preflight-and-summary",
+        "respawn-tasks-dag-runnable-selection",
+        "respawn-tasks-status-update",
+        "respawn-git-savepoint-commit",
+        "respawn-backend-interface-and-types",
+        "respawn-opencode-backend-run-and-session",
+        "respawn-claude-backend-run-and-flag-detect",
+        "respawn-prompt-templates-and-builders",
+        "respawn-runner-verify-command-executor",
+      ]
     description: |
       Implement the core “one task” execution path.
 
@@ -786,6 +842,7 @@ tasks:
       - "internal/run/execute_task_test.go covers success and failing-verify paths using fakes/mocks (no real backend execution)"
     verify:
       - ["go", "test", "./..."]
+      - ["golangci-lint", "run", "./...", "--fix"]
     labels:
       area: core
       priority: P0
@@ -793,7 +850,12 @@ tasks:
   - id: respawn-runner-retry-reset-policy
     title: "Implement 3x3 retry/reset policy with same-session retries and new-session resets"
     parentId: respawn-epic-runner
-    dependsOn: ["respawn-runner-task-execution-and-savepoint", "respawn-git-reset-to-savepoint", "respawn-resume-state-store"]
+    dependsOn:
+      [
+        "respawn-runner-task-execution-and-savepoint",
+        "respawn-git-reset-to-savepoint",
+        "respawn-resume-state-store",
+      ]
     description: |
       Implement the full retry policy: attempts per cycle and cycles with reset to last save point.
 
@@ -821,6 +883,7 @@ tasks:
       - "internal/run/retry_test.go covers: attempt loop, reset between cycles, exhaustion -> failed"
     verify:
       - ["go", "test", "./..."]
+      - ["golangci-lint", "run", "./...", "--fix"]
     labels:
       area: core
       priority: P0
@@ -858,6 +921,7 @@ tasks:
       - "Resume state is cleared on normal completion"
     verify:
       - ["go", "test", "./..."]
+      - ["golangci-lint", "run", "./...", "--fix"]
     labels:
       area: core
       priority: P0
@@ -865,7 +929,17 @@ tasks:
   - id: respawn-decomposer-generate-tasks-yaml
     title: "Implement decomposer: read PRD, build decompose prompts, call backend, write .respawn/tasks.yaml"
     parentId: respawn-epic-decomposer
-    dependsOn: ["respawn-add-decompose-command-skeleton", "respawn-config-merge-precedence", "respawn-backend-interface-and-types", "respawn-opencode-backend-run-and-session", "respawn-claude-backend-run-and-flag-detect", "respawn-prompt-templates-and-builders", "respawn-git-repo-root-and-dirty-check", "respawn-gitignore-validation-and-update"]
+    dependsOn:
+      [
+        "respawn-add-decompose-command-skeleton",
+        "respawn-config-merge-precedence",
+        "respawn-backend-interface-and-types",
+        "respawn-opencode-backend-run-and-session",
+        "respawn-claude-backend-run-and-flag-detect",
+        "respawn-prompt-templates-and-builders",
+        "respawn-git-repo-root-and-dirty-check",
+        "respawn-gitignore-validation-and-update",
+      ]
     description: |
       Implement `respawn decompose --prd <path>`.
 
@@ -893,6 +967,7 @@ tasks:
       - "internal/decomposer/decomposer_test.go covers: overwrite behavior, missing PRD file errors (using temp files)"
     verify:
       - ["go", "test", "./..."]
+      - ["golangci-lint", "run", "./...", "--fix"]
     labels:
       area: core
       priority: P0
@@ -900,7 +975,11 @@ tasks:
   - id: respawn-decomposer-validate-and-retry-fix
     title: "Validate generated .respawn/tasks.yaml and retry fix up to 2 times on errors"
     parentId: respawn-epic-decomposer
-    dependsOn: ["respawn-decomposer-generate-tasks-yaml", "respawn-tasks-parse-respawn-tasks-yaml"]
+    dependsOn:
+      [
+        "respawn-decomposer-generate-tasks-yaml",
+        "respawn-tasks-parse-respawn-tasks-yaml",
+      ]
     description: |
       Add validation + fix retry loop for decomposer output.
 
@@ -924,6 +1003,7 @@ tasks:
       - "internal/decomposer/validate_test.go covers: fix succeeds on retry, fix fails after max retries"
     verify:
       - ["go", "test", "./..."]
+      - ["golangci-lint", "run", "./...", "--fix"]
     labels:
       area: core
       priority: P0
@@ -953,6 +1033,7 @@ tasks:
     verify:
       - ["go", "test", "./..."]
       - ["go", "build", "./..."]
+      - ["golangci-lint", "run", "./...", "--fix"]
     labels:
       area: docs
       priority: P1
