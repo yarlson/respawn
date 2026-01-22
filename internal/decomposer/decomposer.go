@@ -5,14 +5,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strings"
 
 	"respawn/internal/backends"
 	"respawn/internal/prompt"
 	"respawn/internal/tasks"
-
-	"gopkg.in/yaml.v3"
 )
 
 type Backend interface {
@@ -23,6 +19,8 @@ type Decomposer struct {
 	Backend  Backend
 	RepoRoot string
 }
+
+const maxValidationRetries = 2
 
 func New(backend backends.Backend, repoRoot string) *Decomposer {
 	return &Decomposer{
@@ -49,23 +47,34 @@ func (d *Decomposer) Decompose(ctx context.Context, prdPath string, artifactsDir
 
 	userPrompt := prompt.DecomposeUserPrompt(string(prdContent), outputPath)
 
-	res, err := d.Backend.Send(ctx, sessionID, userPrompt, backends.SendOptions{})
-	if err != nil {
-		return fmt.Errorf("send prompt: %w", err)
+	var lastRes *backends.Result
+	var lastErr error
+	var taskList *tasks.TaskList
+
+	for i := 0; i <= maxValidationRetries; i++ {
+		res, err := d.Backend.Send(ctx, sessionID, userPrompt, backends.SendOptions{})
+		if err != nil {
+			return fmt.Errorf("send prompt: %w", err)
+		}
+		lastRes = res
+
+		tasksYAML := extractYAML(res.Output)
+		if tasksYAML == "" {
+			lastErr = fmt.Errorf("no YAML found in backend response")
+		} else {
+			taskList, lastErr = validateTasksYAML(tasksYAML)
+			if lastErr == nil {
+				break
+			}
+		}
+
+		if i < maxValidationRetries {
+			userPrompt = prompt.DecomposeFixPrompt(string(prdContent), extractYAML(lastRes.Output), lastErr.Error())
+		}
 	}
 
-	tasksYAML := extractYAML(res.Output)
-	if tasksYAML == "" {
-		return fmt.Errorf("no YAML found in backend response")
-	}
-
-	var taskList tasks.TaskList
-	if err := yaml.Unmarshal([]byte(tasksYAML), &taskList); err != nil {
-		return fmt.Errorf("unmarshal tasks yaml: %w", err)
-	}
-
-	if err := taskList.Validate(); err != nil {
-		return fmt.Errorf("validate tasks: %w", err)
+	if lastErr != nil {
+		return fmt.Errorf("decompose failed after %d retries: %w", maxValidationRetries, lastErr)
 	}
 
 	tasksPath := filepath.Join(d.RepoRoot, outputPath)
@@ -78,20 +87,4 @@ func (d *Decomposer) Decompose(ctx context.Context, prdPath string, artifactsDir
 	}
 
 	return nil
-}
-
-func extractYAML(output string) string {
-	// Try to find markdown code block first
-	re := regexp.MustCompile("(?s)```(?:yaml)?\n(.*?)\n```")
-	matches := re.FindStringSubmatch(output)
-	if len(matches) > 1 {
-		return strings.TrimSpace(matches[1])
-	}
-
-	// If no code block, look for something that looks like YAML (version: 1 and tasks:)
-	if strings.Contains(output, "version:") && strings.Contains(output, "tasks:") {
-		return strings.TrimSpace(output)
-	}
-
-	return ""
 }

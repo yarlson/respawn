@@ -2,6 +2,7 @@ package decomposer
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,8 +14,9 @@ import (
 )
 
 type mockBackend struct {
-	output string
-	err    error
+	outputs []string
+	err     error
+	calls   int
 }
 
 func (m *mockBackend) StartSession(ctx context.Context, opts backends.SessionOptions) (string, error) {
@@ -25,7 +27,12 @@ func (m *mockBackend) Send(ctx context.Context, sessionID string, prompt string,
 	if m.err != nil {
 		return nil, m.err
 	}
-	return &backends.Result{Output: m.output}, nil
+	if m.calls >= len(m.outputs) {
+		return nil, fmt.Errorf("too many calls to mockBackend")
+	}
+	out := m.outputs[m.calls]
+	m.calls++
+	return &backends.Result{Output: out}, nil
 }
 
 func TestDecompose(t *testing.T) {
@@ -36,7 +43,7 @@ func TestDecompose(t *testing.T) {
 
 	t.Run("successful decomposition", func(t *testing.T) {
 		output := "```yaml\nversion: 1\ntasks:\n  - id: T-001\n    title: Task 1\n    status: todo\n    description: desc\n    commit_message: 'feat: t1'\n```"
-		backend := &mockBackend{output: output}
+		backend := &mockBackend{outputs: []string{output}}
 		d := New(backend, repoRoot)
 
 		err := d.Decompose(context.Background(), prdPath, "")
@@ -49,6 +56,31 @@ func TestDecompose(t *testing.T) {
 		assert.Contains(t, string(content), "id: T-001")
 	})
 
+	t.Run("successful retry", func(t *testing.T) {
+		invalidOutput := "```yaml\ninvalid: yaml: :\n```"
+		validOutput := "```yaml\nversion: 1\ntasks:\n  - id: T-001\n    title: Task 1\n    status: todo\n    description: desc\n    commit_message: 'feat: t1'\n```"
+		backend := &mockBackend{outputs: []string{invalidOutput, validOutput}}
+		d := New(backend, repoRoot)
+
+		err := d.Decompose(context.Background(), prdPath, "")
+		require.NoError(t, err)
+		assert.Equal(t, 2, backend.calls)
+
+		tasksPath := filepath.Join(repoRoot, ".respawn", "tasks.yaml")
+		assert.FileExists(t, tasksPath)
+	})
+
+	t.Run("fail after max retries", func(t *testing.T) {
+		invalidOutput := "```yaml\ninvalid: yaml: :\n```"
+		backend := &mockBackend{outputs: []string{invalidOutput, invalidOutput, invalidOutput}}
+		d := New(backend, repoRoot)
+
+		err := d.Decompose(context.Background(), prdPath, "")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "decompose failed after 2 retries")
+		assert.Equal(t, 3, backend.calls)
+	})
+
 	t.Run("missing PRD file", func(t *testing.T) {
 		backend := &mockBackend{}
 		d := New(backend, repoRoot)
@@ -58,48 +90,10 @@ func TestDecompose(t *testing.T) {
 	})
 
 	t.Run("no YAML in response", func(t *testing.T) {
-		backend := &mockBackend{output: "no yaml here"}
+		backend := &mockBackend{outputs: []string{"no yaml here", "no yaml here", "no yaml here"}}
 		d := New(backend, repoRoot)
 		err := d.Decompose(context.Background(), prdPath, "")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "no YAML found")
 	})
-
-	t.Run("invalid YAML response", func(t *testing.T) {
-		backend := &mockBackend{output: "```yaml\ninvalid: yaml: :\n```"}
-		d := New(backend, repoRoot)
-		err := d.Decompose(context.Background(), prdPath, "")
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "unmarshal tasks yaml")
-	})
-}
-
-func TestExtractYAML(t *testing.T) {
-	tests := []struct {
-		name     string
-		output   string
-		expected string
-	}{
-		{
-			name:     "with markdown fences",
-			output:   "Here is your tasks file:\n```yaml\nversion: 1\ntasks: []\n```\nHope this helps!",
-			expected: "version: 1\ntasks: []",
-		},
-		{
-			name:     "plain yaml",
-			output:   "version: 1\ntasks: []",
-			expected: "version: 1\ntasks: []",
-		},
-		{
-			name:     "no yaml",
-			output:   "just some text",
-			expected: "",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, extractYAML(tt.output))
-		})
-	}
 }

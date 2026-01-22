@@ -12,6 +12,32 @@ func DecomposeUserPrompt(prdContent, outputPath string) string {
 	return fmt.Sprintf("## PRD Content:\n\n%s\n\n## Output Path:\n%s", prdContent, outputPath)
 }
 
+// DecomposeFixPrompt builds the user prompt for fixing invalid decomposition YAML.
+func DecomposeFixPrompt(prdContent, failedYAML, validationError string) string {
+	var b strings.Builder
+
+	b.WriteString("## Task: Fix Invalid .respawn/tasks.yaml\n\n")
+	b.WriteString("The generated YAML is invalid. Please fix it based on the PRD and validation errors.\n\n")
+
+	b.WriteString("### PRD Content\n")
+	b.WriteString(prdContent)
+	b.WriteString("\n\n")
+
+	b.WriteString("### Failed YAML\n")
+	b.WriteString("```yaml\n")
+	b.WriteString(failedYAML)
+	b.WriteString("\n```\n\n")
+
+	b.WriteString("### Validation Errors\n")
+	b.WriteString("```\n")
+	b.WriteString(validationError)
+	b.WriteString("\n```\n\n")
+
+	b.WriteString("Return ONLY the corrected YAML. No prose, no markdown fences.")
+
+	return b.String()
+}
+
 // ImplementUserPrompt builds the user prompt for an implementation task.
 func ImplementUserPrompt(task tasks.Task) string {
 	var b strings.Builder
