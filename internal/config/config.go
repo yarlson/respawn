@@ -49,12 +49,12 @@ func DefaultConfig() *Config {
 			"opencode": {
 				Command: "opencode",
 				Args:    []string{},
-				Model:   "claude-3-5-sonnet-latest",
+				Model:   "anthropic/claude-opus-4-5",
 			},
 			"claude": {
 				Command: "claude",
 				Args:    []string{"-p", "--dangerously-skip-permissions"},
-				Model:   "claude-3-5-sonnet-latest",
+				Model:   "claude-4-5-opus-latest",
 			},
 		},
 	}

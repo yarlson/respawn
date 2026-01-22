@@ -3,10 +3,7 @@ package opencode
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"github.com/yarlson/respawn/internal/backends"
-	"github.com/yarlson/respawn/internal/config"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -14,6 +11,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/yarlson/respawn/internal/backends"
+	"github.com/yarlson/respawn/internal/config"
 )
 
 type sessionInfo struct {
@@ -139,25 +139,8 @@ func (b *OpenCode) Send(ctx context.Context, sessionID string, prompt string, op
 	stdout := stdoutBuf.String()
 	stderr := stderrBuf.String()
 
-	// Parse JSON output if present
-	var output string
-	var extID string
-	lines := strings.Split(stdout, "\n")
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "{") {
-			var res OpencodeOutput
-			if err := json.Unmarshal([]byte(trimmed), &res); err == nil {
-				if res.Output != "" {
-					output = res.Output
-				}
-				if res.SessionID != "" {
-					extID = res.SessionID
-				}
-			}
-		}
-	}
-
+	// Parse NDJSON output from opencode
+	output, extID := ParseOutput(stdout)
 	if output == "" {
 		output = stdout
 	}
