@@ -78,3 +78,16 @@ func (l *TaskList) Validate() error {
 
 	return nil
 }
+
+func (l *TaskList) Save(path string) error {
+	data, err := yaml.Marshal(l)
+	if err != nil {
+		return fmt.Errorf("marshal tasks yaml: %w", err)
+	}
+
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		return fmt.Errorf("write tasks file: %w", err)
+	}
+
+	return nil
+}

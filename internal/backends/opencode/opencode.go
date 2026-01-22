@@ -3,6 +3,7 @@ package opencode
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
@@ -138,6 +139,29 @@ func (b *OpenCode) Send(ctx context.Context, sessionID string, prompt string, op
 	stdout := stdoutBuf.String()
 	stderr := stderrBuf.String()
 
+	// Parse JSON output if present
+	var output string
+	var extID string
+	lines := strings.Split(stdout, "\n")
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "{") {
+			var res OpencodeOutput
+			if err := json.Unmarshal([]byte(trimmed), &res); err == nil {
+				if res.Output != "" {
+					output = res.Output
+				}
+				if res.SessionID != "" {
+					extID = res.SessionID
+				}
+			}
+		}
+	}
+
+	if output == "" {
+		output = stdout
+	}
+
 	// Capture to artifacts
 	if info.opts.ArtifactsDir != "" {
 		backendDir := filepath.Join(info.opts.ArtifactsDir, "backend")
@@ -153,7 +177,6 @@ func (b *OpenCode) Send(ctx context.Context, sessionID string, prompt string, op
 	}
 
 	// Parse session ID from stdout for future reuse
-	extID := parseSessionID(stdout)
 	if extID != "" {
 		info.externalSessionID = extID
 	}
@@ -164,7 +187,7 @@ func (b *OpenCode) Send(ctx context.Context, sessionID string, prompt string, op
 	}
 
 	return &backends.Result{
-		Output: stdout,
+		Output: output,
 		Metadata: map[string]string{
 			"session_id":          sessionID,
 			"external_session_id": info.externalSessionID,
