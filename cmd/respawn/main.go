@@ -1,11 +1,9 @@
 package main
 
 import (
-	"fmt"
-	"os"
+	"respawn/internal/app"
 )
 
 func main() {
-	fmt.Println("respawn starting...")
-	os.Exit(0)
+	app.Execute()
 }
