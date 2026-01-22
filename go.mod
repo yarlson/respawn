@@ -1,4 +1,4 @@
-module respawn
+module github.com/yarlson/respawn
 
 go 1.25.5
 

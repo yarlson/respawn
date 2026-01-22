@@ -2,12 +2,12 @@ package run
 
 import (
 	"context"
+	"github.com/yarlson/respawn/internal/backends"
+	"github.com/yarlson/respawn/internal/config"
+	"github.com/yarlson/respawn/internal/state"
+	"github.com/yarlson/respawn/internal/tasks"
 	"os"
 	"path/filepath"
-	"respawn/internal/backends"
-	"respawn/internal/config"
-	"respawn/internal/state"
-	"respawn/internal/tasks"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

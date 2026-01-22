@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"respawn/internal/tasks"
+	"github.com/yarlson/respawn/internal/tasks"
 )
 
 // DecomposeUserPrompt builds the user prompt for the decomposition task.

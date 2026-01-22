@@ -2,9 +2,9 @@ package claude
 
 import (
 	"context"
+	"github.com/yarlson/respawn/internal/backends"
 	"os"
 	"path/filepath"
-	"respawn/internal/backends"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

@@ -1,13 +1,13 @@
-package app
+package respawn
 
 import (
 	"fmt"
 
-	"respawn/internal/backends"
-	"respawn/internal/backends/claude"
-	"respawn/internal/backends/opencode"
-	"respawn/internal/config"
-	"respawn/internal/run"
+	"github.com/yarlson/respawn/internal/backends"
+	"github.com/yarlson/respawn/internal/backends/claude"
+	"github.com/yarlson/respawn/internal/backends/opencode"
+	"github.com/yarlson/respawn/internal/config"
+	"github.com/yarlson/respawn/internal/run"
 
 	"github.com/spf13/cobra"
 )

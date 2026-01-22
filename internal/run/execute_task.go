@@ -3,11 +3,11 @@ package run
 import (
 	"context"
 	"fmt"
+	"github.com/yarlson/respawn/internal/backends"
+	"github.com/yarlson/respawn/internal/gitx"
+	"github.com/yarlson/respawn/internal/prompt"
+	"github.com/yarlson/respawn/internal/tasks"
 	"path/filepath"
-	"respawn/internal/backends"
-	"respawn/internal/gitx"
-	"respawn/internal/prompt"
-	"respawn/internal/tasks"
 )
 
 // ExecuteTask selects and executes the next runnable task.

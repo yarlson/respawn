@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"respawn/internal/tasks"
+	"github.com/yarlson/respawn/internal/tasks"
 
 	"github.com/stretchr/testify/assert"
 )

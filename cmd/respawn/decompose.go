@@ -1,4 +1,4 @@
-package app
+package respawn
 
 import (
 	"bufio"
@@ -7,12 +7,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"respawn/internal/backends/claude"
-	"respawn/internal/backends/opencode"
-	"respawn/internal/config"
-	"respawn/internal/decomposer"
-	"respawn/internal/gitx"
-	"respawn/internal/run"
+	"github.com/yarlson/respawn/internal/backends/claude"
+	"github.com/yarlson/respawn/internal/backends/opencode"
+	"github.com/yarlson/respawn/internal/config"
+	"github.com/yarlson/respawn/internal/decomposer"
+	"github.com/yarlson/respawn/internal/gitx"
+	"github.com/yarlson/respawn/internal/run"
 
 	"github.com/spf13/cobra"
 )

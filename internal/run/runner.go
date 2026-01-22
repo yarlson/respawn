@@ -6,11 +6,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"respawn/internal/backends"
-	"respawn/internal/config"
-	"respawn/internal/gitx"
-	"respawn/internal/state"
-	"respawn/internal/tasks"
+	"github.com/yarlson/respawn/internal/backends"
+	"github.com/yarlson/respawn/internal/config"
+	"github.com/yarlson/respawn/internal/gitx"
+	"github.com/yarlson/respawn/internal/state"
+	"github.com/yarlson/respawn/internal/tasks"
 )
 
 type Runner struct {

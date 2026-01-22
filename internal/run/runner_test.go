@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"respawn/internal/tasks"
+	"github.com/yarlson/respawn/internal/tasks"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

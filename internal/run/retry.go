@@ -3,9 +3,9 @@ package run
 import (
 	"context"
 	"fmt"
-	"respawn/internal/gitx"
-	"respawn/internal/state"
-	"respawn/internal/tasks"
+	"github.com/yarlson/respawn/internal/gitx"
+	"github.com/yarlson/respawn/internal/state"
+	"github.com/yarlson/respawn/internal/tasks"
 )
 
 // RetryPolicy manages the lifecycle of a task execution with retries and resets.

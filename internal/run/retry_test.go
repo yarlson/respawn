@@ -3,12 +3,12 @@ package run
 import (
 	"context"
 	"fmt"
+	"github.com/yarlson/respawn/internal/config"
+	"github.com/yarlson/respawn/internal/gitx"
+	"github.com/yarlson/respawn/internal/state"
+	"github.com/yarlson/respawn/internal/tasks"
 	"os"
 	"path/filepath"
-	"respawn/internal/config"
-	"respawn/internal/gitx"
-	"respawn/internal/state"
-	"respawn/internal/tasks"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

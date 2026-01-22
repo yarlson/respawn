@@ -6,9 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"respawn/internal/backends"
-	"respawn/internal/prompt"
-	"respawn/internal/tasks"
+	"github.com/yarlson/respawn/internal/backends"
+	"github.com/yarlson/respawn/internal/prompt"
+	"github.com/yarlson/respawn/internal/tasks"
 )
 
 type Backend interface {

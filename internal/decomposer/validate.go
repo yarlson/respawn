@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"respawn/internal/tasks"
+	"github.com/yarlson/respawn/internal/tasks"
 
 	"gopkg.in/yaml.v3"
 )
