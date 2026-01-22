@@ -16,19 +16,21 @@ const (
 )
 
 type Task struct {
-	ID            string     `yaml:"id"`
-	Title         string     `yaml:"title"`
-	Status        TaskStatus `yaml:"status"`
-	Deps          []string   `yaml:"deps,omitempty"`
-	Description   string     `yaml:"description"`
-	Acceptance    []string   `yaml:"acceptance"`
-	Verify        []string   `yaml:"verify"`
-	CommitMessage string     `yaml:"commit_message"`
+	ID            string                 `yaml:"id"`
+	Title         string                 `yaml:"title"`
+	Status        TaskStatus             `yaml:"status"`
+	Deps          []string               `yaml:"deps,omitempty"`
+	Description   string                 `yaml:"description"`
+	Acceptance    []string               `yaml:"acceptance"`
+	Verify        []string               `yaml:"verify"`
+	CommitMessage string                 `yaml:"commit_message"`
+	Other         map[string]interface{} `yaml:",inline"`
 }
 
 type TaskList struct {
-	Version int    `yaml:"version"`
-	Tasks   []Task `yaml:"tasks"`
+	Version int                    `yaml:"version"`
+	Tasks   []Task                 `yaml:"tasks"`
+	Other   map[string]interface{} `yaml:",inline"`
 }
 
 func Load(path string) (*TaskList, error) {
