@@ -59,6 +59,12 @@ func NewRunner(ctx context.Context, cfg Config) (*Runner, error) {
 		return nil, fmt.Errorf("load state: %w", err)
 	}
 
+	if !exists {
+		runState = &state.RunState{
+			RunID: GenerateRunID(),
+		}
+	}
+
 	// Clean working tree rule
 	// IMPORTANT: Check this BEFORE we modify .gitignore ourselves
 	if !exists {

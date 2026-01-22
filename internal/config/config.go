@@ -53,7 +53,7 @@ func DefaultConfig() *Config {
 			},
 			"claude": {
 				Command: "claude",
-				Args:    []string{"-p"},
+				Args:    []string{"-p", "--dangerously-skip-permissions"},
 				Model:   "claude-3-5-sonnet-latest",
 			},
 		},

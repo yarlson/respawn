@@ -38,5 +38,22 @@ func extractYAML(output string) string {
 		return strings.TrimSpace(output)
 	}
 
+	// Also accept YAML that starts with tasks: (missing version) - we'll get validation error
+	// but at least we'll extract it for retry/fix
+	if strings.Contains(output, "tasks:") {
+		// Find where tasks: starts and extract from there
+		idx := strings.Index(output, "tasks:")
+		if idx >= 0 {
+			// Check if there's version: before tasks:
+			beforeTasks := output[:idx]
+			if versionIdx := strings.LastIndex(beforeTasks, "version:"); versionIdx >= 0 {
+				return strings.TrimSpace(output[versionIdx:])
+			}
+			// No version found, prepend it
+			extracted := strings.TrimSpace(output[idx:])
+			return "version: 1\n" + extracted
+		}
+	}
+
 	return ""
 }

@@ -45,7 +45,8 @@ func (d *Decomposer) Decompose(ctx context.Context, prdPath string, artifactsDir
 		return fmt.Errorf("start session: %w", err)
 	}
 
-	userPrompt := prompt.DecomposeUserPrompt(string(prdContent), outputPath)
+	// Combine system prompt with user prompt for backends that don't support separate system prompts
+	userPrompt := prompt.DecomposerSystemPrompt + "\n\n" + prompt.DecomposeUserPrompt(string(prdContent), outputPath)
 
 	var lastRes *backends.Result
 	var lastErr error

@@ -22,6 +22,10 @@ INPUT
 
 OUTPUT (HARD REQUIREMENTS)
 - Output YAML only. No prose, no markdown fences, no commentary.
+- YAML SYNTAX: When array items contain quotes, quote the ENTIRE value.
+  - Bad:  - "./calc 5 + 3" outputs "8"  (partial quotes = invalid YAML)
+  - Good: - '"./calc 5 + 3" outputs "8"' (entire value single-quoted)
+  - Good: - ./calc 5 + 3 outputs 8       (no quotes at all)
 - The YAML MUST conform to this schema:
 
 version: 1
@@ -55,10 +59,27 @@ Never generate tasks that:
 - Lack file specificity
 - Are test-only tasks
 
+VERIFY COMMAND CONSISTENCY (CRITICAL)
+- Verify commands must be consistent with the file structure defined in the task.
+- If source code is in a subdirectory (e.g., cmd/app/main.go), build outputs must not collide with directory names.
+- Bad: source in myapp/, then "go build -o myapp ./myapp" (outputs to myapp/myapp, not ./myapp)
+- Good: source in cmd/myapp/, then "go build -o myapp ./cmd/myapp" (outputs to ./myapp)
+- Good: source in main.go at root, then "go build -o myapp ." (outputs to ./myapp)
+- Mentally trace each verify command against the file layout to ensure paths resolve correctly.
+
+VERIFY COMMAND SEMANTICS (CRITICAL)
+- Each verify command must exit 0 on success. The harness runs them in sequence and fails on first non-zero exit.
+- To verify output contains text: cmd 2>&1 | grep -q "expected"
+- To verify command exits non-zero: ! cmd (but be careful: ! cmd | grep ... negates the whole pipeline)
+- To verify error output AND non-zero exit: cmd 2>&1 | grep -q "error" && ! cmd (run twice, or use a subshell)
+- Simpler alternative for error cases: cmd 2>&1 | grep -q "expected error message"
+- Avoid complex negations. If checking for expected error messages, just grep for them (the command will fail if grep doesn't match).
+
 QUALITY GATE BEFORE FINAL OUTPUT
 - All deps reference existing task IDs; no cycles.
 - Every task has file-specific description.
 - commit_message present for every task and matches Conventional Commits format.
+- Verify commands are consistent with file paths and don't have naming collisions.
 
 BEGIN
 Convert the provided PRD into .respawn/tasks.yaml now.`

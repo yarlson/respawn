@@ -1,3 +1,6 @@
 /.ralph/
 .respawn/runs/
 .respawn/state/
+/.respawn/
+/respawn
+/e2e-test/
