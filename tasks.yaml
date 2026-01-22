@@ -1,0 +1,958 @@
+version: 1
+tasks:
+  - id: respawn-root
+    title: "Respawn — implement PRD end-to-end"
+    description: |
+      Deliver the full Respawn CLI per the PRD:
+
+      * Go 1.22+, Cobra CLI
+      * Local-only Git save points
+      * Task DAG execution from .respawn/tasks.yaml (Respawn format)
+      * Decomposer mode (PRD -> .respawn/tasks.yaml)
+      * Resume via .respawn/state/
+      * Quiet-by-default UX
+      * Backends: OpenCode + Claude Code (shell out)
+    labels:
+      area: meta
+      priority: P0
+
+  - id: respawn-epic-scaffold
+    title: "Scaffold project and Cobra CLI skeleton"
+    parentId: respawn-root
+    labels:
+      area: infra
+      priority: P0
+
+  - id: respawn-epic-config
+    title: "Global configuration (respawn.yaml) and precedence"
+    parentId: respawn-root
+    labels:
+      area: infra
+      priority: P0
+
+  - id: respawn-epic-taskgraph
+    title: "Tasks file parsing and DAG selection"
+    parentId: respawn-root
+    labels:
+      area: core
+      priority: P0
+
+  - id: respawn-epic-git
+    title: "Git integration: status, ignore validation, commits, reset"
+    parentId: respawn-root
+    labels:
+      area: infra
+      priority: P0
+
+  - id: respawn-epic-artifacts
+    title: "Run artifacts and resume state persistence"
+    parentId: respawn-root
+    labels:
+      area: infra
+      priority: P0
+
+  - id: respawn-epic-backends
+    title: "Backend adapters: OpenCode and Claude Code"
+    parentId: respawn-root
+    labels:
+      area: core
+      priority: P0
+
+  - id: respawn-epic-prompts
+    title: "Prompt packaging (adopted from Ralph)"
+    parentId: respawn-root
+    labels:
+      area: core
+      priority: P0
+
+  - id: respawn-epic-runner
+    title: "Runner orchestration: execute → verify → commit with retries"
+    parentId: respawn-root
+    labels:
+      area: core
+      priority: P0
+
+  - id: respawn-epic-decomposer
+    title: "Decomposer mode: PRD → .respawn/tasks.yaml"
+    parentId: respawn-root
+    labels:
+      area: core
+      priority: P0
+
+  - id: respawn-epic-docs
+    title: "Docs and repository conventions"
+    parentId: respawn-root
+    labels:
+      area: docs
+      priority: P1
+
+  - id: respawn-init-module
+    title: "Initialize Go module and entrypoint"
+    parentId: respawn-epic-scaffold
+    description: |
+      Create minimal Go module and CLI entrypoint.
+
+      Files:
+
+      * Create go.mod (module name can be "respawn" for v1)
+      * Create cmd/respawn/main.go
+
+      Implementation notes:
+
+      * main.go must compile and exit 0 (placeholder) to keep early steps green.
+    acceptance:
+      - "go.mod exists and declares a Go 1.22+ module"
+      - "cmd/respawn/main.go builds successfully"
+      - "`go build ./...` succeeds"
+    verify:
+      - ["go", "build", "./..."]
+      - ["go", "test", "./..."]
+    labels:
+      area: infra
+      priority: P0
+
+  - id: respawn-add-cobra-root
+    title: "Add Cobra root command and wiring"
+    parentId: respawn-epic-scaffold
+    dependsOn: ["respawn-init-module"]
+    description: |
+      Introduce Cobra root command and wire it from main.
+
+      Files:
+
+      * Create internal/app/root.go
+      * Create internal/app/app.go
+      * Modify cmd/respawn/main.go
+
+      Requirements:
+
+      * root command named "respawn"
+      * `Execute()` called from main
+      * `--help` works
+    acceptance:
+      - "internal/app/root.go defines a Cobra root command for `respawn`"
+      - "cmd/respawn/main.go calls internal/app.Execute() (or equivalent) and returns correct exit codes"
+      - "`respawn --help` prints usage (manual check ok)"
+      - "`go test ./...` passes"
+    verify:
+      - ["go", "test", "./..."]
+      - ["go", "build", "./..."]
+    labels:
+      area: infra
+      priority: P0
+
+  - id: respawn-add-run-command-skeleton
+    title: "Add `respawn` runner command skeleton and flags"
+    parentId: respawn-epic-scaffold
+    dependsOn: ["respawn-add-cobra-root"]
+    description: |
+      Add the runner command handler (still stubbed) and define core flags.
+
+      Files:
+
+      * Create internal/app/run_cmd.go
+      * Modify internal/app/root.go
+      * Create internal/app/run_cmd_test.go
+
+      Requirements:
+
+      * Flags (parsed, not necessarily used yet):
+        * --backend (opencode|claude)
+        * --model (string)
+        * --variant (string; accepted but may be ignored later for claude)
+        * --yes, --verbose, --debug
+      * Running `respawn` should not panic; can print placeholder output for now.
+    acceptance:
+      - "internal/app/run_cmd.go defines a Cobra command for the default `respawn` run"
+      - "Flags are registered: --backend, --model, --variant, --yes, --verbose, --debug"
+      - "internal/app/run_cmd_test.go verifies flag defaults parse without error"
+      - "`go test ./...` passes"
+    verify:
+      - ["go", "test", "./..."]
+    labels:
+      area: infra
+      priority: P0
+
+  - id: respawn-add-decompose-command-skeleton
+    title: "Add `respawn decompose` command skeleton and flags"
+    parentId: respawn-epic-scaffold
+    dependsOn: ["respawn-add-cobra-root"]
+    description: |
+      Add the decomposer command handler (still stubbed) and define required flags.
+
+      Files:
+
+      * Create internal/app/decompose_cmd.go
+      * Modify internal/app/root.go
+      * Create internal/app/decompose_cmd_test.go
+
+      Requirements:
+
+      * `respawn decompose` subcommand exists
+      * Required flag: --prd (path)
+      * Also support: --backend, --model, --variant, --yes, --verbose, --debug (same as runner)
+    acceptance:
+      - "internal/app/decompose_cmd.go defines a Cobra subcommand `decompose`"
+      - "--prd flag is required and validated"
+      - "internal/app/decompose_cmd_test.go verifies `--prd` requirement and flag parsing"
+      - "`go test ./...` passes"
+    verify:
+      - ["go", "test", "./..."]
+    labels:
+      area: infra
+      priority: P0
+
+  - id: respawn-config-path-and-parse
+    title: "Implement global config path resolution and YAML parsing"
+    parentId: respawn-epic-config
+    dependsOn: ["respawn-add-cobra-root"]
+    description: |
+      Implement config loading from global respawn.yaml per PRD.
+
+      Files:
+
+      * Create internal/config/config.go
+      * Create internal/config/config_test.go
+
+      Requirements:
+
+      * Resolve config path (non-Windows):
+        1. if XDG_CONFIG_HOME set: ${XDG_CONFIG_HOME}/respawn/respawn.yaml
+        2. else: ~/.config/respawn/respawn.yaml
+      * Parse YAML into strongly typed structs:
+        * defaults.backend, defaults.quiet, defaults.retry.cycles, defaults.retry.attempts
+        * backends.opencode.command/args/model/variant
+        * backends.claude.command/args/model
+      * If config file missing: return defaults (no error).
+    acceptance:
+      - "internal/config/config.go implements config path resolution exactly as specified"
+      - "Config parsing supports the documented YAML structure"
+      - "internal/config/config_test.go covers: XDG_CONFIG_HOME set/unset, missing file uses defaults, YAML parsing"
+      - "`go test ./...` passes"
+    verify:
+      - ["go", "test", "./..."]
+    labels:
+      area: infra
+      priority: P0
+
+  - id: respawn-config-merge-precedence
+    title: "Implement CLI > config > defaults precedence merge"
+    parentId: respawn-epic-config
+    dependsOn: ["respawn-config-path-and-parse", "respawn-add-run-command-skeleton", "respawn-add-decompose-command-skeleton"]
+    description: |
+      Implement a merge layer so runner/decomposer can produce an effective config.
+
+      Files:
+
+      * Create internal/config/merge.go
+      * Create internal/config/merge_test.go
+      * Modify internal/config/config.go (export any needed types/helpers)
+
+      Requirements:
+
+      * Define a small input struct for CLI overrides: backend/model/variant/yes/verbose/debug
+      * Precedence: CLI flags (when non-empty / true) override config; config overrides defaults
+      * `--variant` is provider-independent flag but only meaningful for opencode:
+        * merge should keep it; runtime will warn+ignore for claude
+    acceptance:
+      - "internal/config/merge.go provides a single function to compute effective settings from config + CLI overrides"
+      - "internal/config/merge_test.go verifies precedence and empty-flag behavior"
+      - "`go test ./...` passes"
+    verify:
+      - ["go", "test", "./..."]
+    labels:
+      area: infra
+      priority: P0
+
+  - id: respawn-tasks-parse-respawn-tasks-yaml
+    title: "Parse .respawn/tasks.yaml (Respawn schema) and validate basics"
+    parentId: respawn-epic-taskgraph
+    dependsOn: ["respawn-init-module"]
+    description: |
+      Implement parsing for Respawn's tasks file (NOT Ralph tasks.yaml).
+
+      Files:
+
+      * Create internal/tasks/tasks.go
+      * Create internal/tasks/tasks_test.go
+
+      Requirements:
+
+      * Parse ./ .respawn/tasks.yaml into in-memory structs:
+        * version (int)
+        * tasks[] with fields: id, title, status, deps, description, acceptance, verify, commit_message
+      * Validate:
+        * unique task IDs
+        * referenced deps exist
+        * status is one of: todo|done|failed
+    acceptance:
+      - "internal/tasks/tasks.go can load and parse a sample .respawn/tasks.yaml"
+      - "Validation rejects duplicate IDs and missing deps"
+      - "internal/tasks/tasks_test.go covers valid and invalid fixtures"
+      - "`go test ./...` passes"
+    verify:
+      - ["go", "test", "./..."]
+    labels:
+      area: core
+      priority: P0
+
+  - id: respawn-tasks-dag-runnable-selection
+    title: "Implement DAG runnable selection and stable ordering"
+    parentId: respawn-epic-taskgraph
+    dependsOn: ["respawn-tasks-parse-respawn-tasks-yaml"]
+    description: |
+      Implement runnable selection logic for Respawn tasks.
+
+      Files:
+
+      * Create internal/tasks/dag.go
+      * Create internal/tasks/dag_test.go
+
+      Requirements:
+
+      * A task is runnable iff:
+        * status == todo
+        * all deps exist and have status == done
+      * Tie-breaker is stable file order as loaded (do not sort by ID).
+      * Provide functions:
+        * RunnableTasks(tasks) -> []Task (in order)
+        * BlockedSummary(tasks) -> counts (blocked due to failed deps)
+    acceptance:
+      - "internal/tasks/dag.go implements runnable selection per PRD"
+      - "Stable ordering is preserved from file load order"
+      - "internal/tasks/dag_test.go includes cases: deps done, deps failed, multiple runnable tasks"
+      - "`go test ./...` passes"
+    verify:
+      - ["go", "test", "./..."]
+    labels:
+      area: core
+      priority: P0
+
+  - id: respawn-tasks-status-update
+    title: "Implement status-only updates back into .respawn/tasks.yaml"
+    parentId: respawn-epic-taskgraph
+    dependsOn: ["respawn-tasks-parse-respawn-tasks-yaml"]
+    description: |
+      Add functionality to update ONLY `status` fields in-place (preserving other fields).
+
+      Files:
+
+      * Create internal/tasks/update.go
+      * Create internal/tasks/update_test.go
+      * Modify internal/tasks/tasks.go (expose helpers as needed)
+
+      Requirements:
+
+      * Update a task status by ID: todo -> done|failed
+      * Do not overwrite/normalize other fields more than necessary (keep KISS; it's ok if YAML is re-marshaled consistently, but must preserve all task data).
+    acceptance:
+      - "internal/tasks/update.go updates a task's status by id"
+      - "Only status changes; other fields remain semantically intact after write+reload"
+      - "internal/tasks/update_test.go covers: update done, update failed, unknown id error"
+      - "`go test ./...` passes"
+    verify:
+      - ["go", "test", "./..."]
+    labels:
+      area: core
+      priority: P0
+
+  - id: respawn-git-repo-root-and-dirty-check
+    title: "Implement git repo root detection and dirty working tree check"
+    parentId: respawn-epic-git
+    dependsOn: ["respawn-init-module"]
+    description: |
+      Implement core Git operations via `git` CLI.
+
+      Files:
+
+      * Create internal/gitx/gitx.go
+      * Create internal/gitx/gitx_test.go
+
+      Requirements:
+
+      * Find repo root: `git rev-parse --show-toplevel`
+      * Dirty check: `git status --porcelain`
+      * Expose:
+        * RepoRoot(ctx, cwd) (string, error)
+        * IsDirty(ctx, repoRoot) (bool, error)
+    acceptance:
+      - "internal/gitx/gitx.go detects repo root using git"
+      - "Dirty check returns true when porcelain output is non-empty"
+      - "internal/gitx/gitx_test.go uses temp git repo fixtures to test clean/dirty"
+      - "`go test ./...` passes"
+    verify:
+      - ["go", "test", "./..."]
+    labels:
+      area: infra
+      priority: P0
+
+  - id: respawn-gitignore-validation-and-update
+    title: "Validate `.gitignore` ignores and add missing ignores with prompt support"
+    parentId: respawn-epic-git
+    dependsOn: ["respawn-git-repo-root-and-dirty-check"]
+    description: |
+      Implement `.gitignore` validation and idempotent update logic.
+
+      Files:
+
+      * Create internal/gitx/gitignore.go
+      * Create internal/gitx/gitignore_test.go
+
+      Requirements:
+
+      * Validate these paths are ignored using git semantics:
+        * .respawn/runs/
+        * .respawn/state/
+      * Use `git check-ignore -q <path>` for validation.
+      * Provide functions:
+        * MissingRespawnIgnores(ctx, repoRoot) ([]string, error)
+        * AddIgnoresToGitignore(repoRoot, ignores []string) error
+      * Add rules: append only missing lines; do not reorder; preserve newline at EOF.
+      * Prompting is handled by caller; this task only provides the mutation primitive.
+    acceptance:
+      - "internal/gitx/gitignore.go detects missing ignores using git check-ignore"
+      - "AddIgnoresToGitignore appends missing lines idempotently without reordering"
+      - "internal/gitx/gitignore_test.go covers: already present, partially present, newline handling"
+      - "`go test ./...` passes"
+    verify:
+      - ["go", "test", "./..."]
+    labels:
+      area: infra
+      priority: P0
+
+  - id: respawn-git-savepoint-commit
+    title: "Implement save point commits with footer `Respawn: T-001`"
+    parentId: respawn-epic-git
+    dependsOn: ["respawn-git-repo-root-and-dirty-check"]
+    description: |
+      Implement commit creation for successful tasks.
+
+      Files:
+
+      * Create internal/gitx/commit.go
+      * Create internal/gitx/commit_test.go
+
+      Requirements:
+
+      * Expose CommitSavePoint(ctx, repoRoot, subjectLine, footerLine) (commitHash string, error)
+      * Commit message format:
+        * first line: subjectLine (verbatim)
+        * blank line
+        * footer line: `Respawn: T-001` (provided by caller)
+      * Commit must include current working tree changes (normal git commit).
+    acceptance:
+      - "internal/gitx/commit.go creates commits with subject and footer format exactly as specified"
+      - "Returned commit hash matches `git rev-parse HEAD` after commit"
+      - "internal/gitx/commit_test.go creates a temp repo, commits a change, asserts commit message contains footer"
+      - "`go test ./...` passes"
+    verify:
+      - ["go", "test", "./..."]
+    labels:
+      area: infra
+      priority: P0
+
+  - id: respawn-git-reset-to-savepoint
+    title: "Implement hard reset to last save point commit"
+    parentId: respawn-epic-git
+    dependsOn: ["respawn-git-repo-root-and-dirty-check"]
+    description: |
+      Implement reset mechanics used between retry cycles.
+
+      Files:
+
+      * Create internal/gitx/reset.go
+      * Create internal/gitx/reset_test.go
+
+      Requirements:
+
+      * Expose ResetHard(ctx, repoRoot, commitHash) error
+      * Use `git reset --hard <hash>`
+      * Do NOT delete untracked files (no git clean).
+    acceptance:
+      - "internal/gitx/reset.go performs `git reset --hard` to the given commit"
+      - "Untracked files are not deleted by ResetHard"
+      - "internal/gitx/reset_test.go covers: modify tracked file then reset, ensure file contents restored"
+      - "`go test ./...` passes"
+    verify:
+      - ["go", "test", "./..."]
+    labels:
+      area: infra
+      priority: P0
+
+  - id: respawn-run-artifacts-layout
+    title: "Create run-id and artifact directory layout under .respawn/runs/"
+    parentId: respawn-epic-artifacts
+    dependsOn: ["respawn-init-module"]
+    description: |
+      Implement run artifact directory creation and helpers.
+
+      Files:
+
+      * Create internal/run/artifacts.go
+      * Create internal/run/artifacts_test.go
+      * Create internal/run/runid.go
+
+      Requirements:
+
+      * Create run-id (timestamp-based + short random suffix).
+      * Create directories:
+        * .respawn/runs/<run-id>/
+        * .respawn/runs/<run-id>/prompts/
+        * .respawn/runs/<run-id>/backend/
+        * .respawn/runs/<run-id>/verify/
+        * .respawn/runs/<run-id>/git/
+      * Provide helpers to write small text files (system/user prompts, etc.).
+    acceptance:
+      - "internal/run/runid.go generates sortable unique run IDs"
+      - "internal/run/artifacts.go creates the specified directory layout under repo root"
+      - "internal/run/artifacts_test.go verifies directory creation in a temp repo root"
+      - "`go test ./...` passes"
+    verify:
+      - ["go", "test", "./..."]
+    labels:
+      area: infra
+      priority: P0
+
+  - id: respawn-resume-state-store
+    title: "Persist and load resume state under .respawn/state/run.json"
+    parentId: respawn-epic-artifacts
+    dependsOn: ["respawn-init-module"]
+    description: |
+      Implement persistent resume state storage.
+
+      Files:
+
+      * Create internal/state/state.go
+      * Create internal/state/state_test.go
+      * Create internal/state/types.go
+
+      Requirements:
+
+      * Store in .respawn/state/run.json under repo root.
+      * Include fields sufficient to resume:
+        * run_id, active_task_id
+        * cycle, attempt
+        * backend name, backend session id (best-effort)
+        * last_savepoint_commit
+        * artifact root path for run
+      * Provide:
+        * Load(repoRoot) (*RunState, boolExists, error)
+        * Save(repoRoot, state) error
+        * Clear(repoRoot) error
+    acceptance:
+      - "internal/state/types.go defines a stable JSON-serializable RunState"
+      - "internal/state/state.go can save, load, and clear .respawn/state/run.json"
+      - "internal/state/state_test.go covers: save+load roundtrip, clear removes file"
+      - "`go test ./...` passes"
+    verify:
+      - ["go", "test", "./..."]
+    labels:
+      area: infra
+      priority: P0
+
+  - id: respawn-backend-interface-and-types
+    title: "Define backend interface and common types for sessions and prompts"
+    parentId: respawn-epic-backends
+    dependsOn: ["respawn-init-module", "respawn-config-path-and-parse"]
+    description: |
+      Define a small backend abstraction used by runner and decomposer.
+
+      Files:
+
+      * Create internal/backends/backend.go
+      * Create internal/backends/types.go
+
+      Requirements:
+
+      * Interface includes:
+        * StartSession(ctx, opts) (sessionID string, err error) OR equivalent creation semantics
+        * Send(ctx, sessionID, prompt, opts) (result, err)
+      * Types capture:
+        * effective model/variant (variant optional)
+        * cwd/repo root
+        * artifact paths for stdout/stderr capture
+    acceptance:
+      - "internal/backends/backend.go defines a minimal interface used by runner/decomposer"
+      - "internal/backends/types.go defines session/options structs without over-engineering"
+      - "`go test ./...` passes"
+    verify:
+      - ["go", "test", "./..."]
+    labels:
+      area: core
+      priority: P0
+
+  - id: respawn-opencode-backend-run-and-session
+    title: "Implement OpenCode backend execution with model/variant and best-effort session reuse"
+    parentId: respawn-epic-backends
+    dependsOn: ["respawn-backend-interface-and-types", "respawn-config-merge-precedence", "respawn-run-artifacts-layout"]
+    description: |
+      Implement OpenCode backend adapter by shelling out to `opencode run`.
+
+      Files:
+
+      * Create internal/backends/opencode/opencode.go
+      * Create internal/backends/opencode/opencode_test.go
+      * Create internal/backends/opencode/parse.go
+
+      Requirements:
+
+      * Command/args come from effective config:
+        * base: <command> <args...> (default includes: run --format json)
+        * append --model when provided
+        * append --variant when provided
+      * Session handling:
+        * New task: start without -c/--continue
+        * Retry in same cycle: re-use same session best-effort:
+          * prefer `--session <id>` when session id is known
+          * otherwise fall back to `--continue` and log a warning in artifacts
+      * Capture stdout/stderr to `.respawn/runs/<run-id>/backend/`.
+      * Parse JSON output best-effort to extract a session id (implementation-specific).
+    acceptance:
+      - "internal/backends/opencode/opencode.go runs opencode using configured command/args and writes stdout/stderr to artifacts"
+      - "Model/variant flags are applied when set"
+      - "Session reuse attempts use --session when known, otherwise --continue with a warning"
+      - "internal/backends/opencode/opencode_test.go covers command construction and session flag behavior (no real opencode invocation required)"
+    verify:
+      - ["go", "test", "./..."]
+    labels:
+      area: core
+      priority: P0
+
+  - id: respawn-claude-backend-run-and-flag-detect
+    title: "Implement Claude Code backend execution with best-effort continue/resume detection"
+    parentId: respawn-epic-backends
+    dependsOn: ["respawn-backend-interface-and-types", "respawn-config-merge-precedence", "respawn-run-artifacts-layout"]
+    description: |
+      Implement Claude Code backend adapter by shelling out to `claude`.
+
+      Files:
+
+      * Create internal/backends/claude/claude.go
+      * Create internal/backends/claude/claude_test.go
+      * Create internal/backends/claude/detect.go
+
+      Requirements:
+
+      * Command/args come from effective config.
+      * Prompt is provided via stdin.
+      * Best-effort session reuse in same cycle:
+        * Detect support for `--continue` / `--resume` by executing `claude --help` (or `claude -h`) once and parsing output.
+        * If supported and a prior session is known, use it; otherwise, re-run with same prompts and log that reuse wasn't possible.
+      * If `--variant` was set in effective config, ignore it and record a soft warning (console + artifact note).
+      * Capture stdout/stderr to artifacts.
+    acceptance:
+      - "internal/backends/claude/claude.go runs claude with configured command/args and stdin prompt"
+      - "internal/backends/claude/detect.go detects available flags by parsing `claude --help` output"
+      - "Variant is ignored for claude with a soft warning recorded"
+      - "internal/backends/claude/claude_test.go covers command construction and flag-detection parsing"
+    verify:
+      - ["go", "test", "./..."]
+    labels:
+      area: core
+      priority: P0
+
+  - id: respawn-prompt-templates-and-builders
+    title: "Implement prompt templates/builders (decompose, implement, retry) adopted from Ralph"
+    parentId: respawn-epic-prompts
+    dependsOn: ["respawn-init-module", "respawn-tasks-parse-respawn-tasks-yaml"]
+    description: |
+      Implement prompt templates and a small builder API. Adopt the Ralph prompt structure,
+      but adapt content to Respawn PRD requirements.
+
+      Files:
+
+      * Create internal/prompt/templates.go
+      * Create internal/prompt/builder.go
+      * Create internal/prompt/prompt_test.go
+
+      Requirements:
+
+      * Provide canonical system prompts (strings) for:
+        * Decomposer system prompt (PRD -> .respawn/tasks.yaml)
+        * Implementation system prompt (one task at a time; no commits)
+        * Retry system prompt (fix-only)
+      * Provide user prompt builders:
+        * Decompose user prompt: includes PRD content and output path (.respawn/tasks.yaml)
+        * Implement user prompt: task title/description/acceptance/verify + minimal context
+        * Retry user prompt: include trimmed failure output + task details + verify commands
+      * Keep prompt builder deterministic and small (KISS).
+    acceptance:
+      - "internal/prompt/templates.go contains the three canonical system prompts matching the PRD"
+      - "internal/prompt/builder.go can build user prompts for decompose/implement/retry from inputs"
+      - "internal/prompt/prompt_test.go covers: required sections present, deterministic formatting, failure output included in retry prompt"
+      - "`go test ./...` passes"
+    verify:
+      - ["go", "test", "./..."]
+    labels:
+      area: core
+      priority: P0
+
+  - id: respawn-runner-preflight-and-summary
+    title: "Implement runner preflight: repo root, tasks.yaml presence, .gitignore check, counts summary"
+    parentId: respawn-epic-runner
+    dependsOn: ["respawn-add-run-command-skeleton", "respawn-git-repo-root-and-dirty-check", "respawn-gitignore-validation-and-update", "respawn-tasks-parse-respawn-tasks-yaml", "respawn-config-merge-precedence", "respawn-run-artifacts-layout", "respawn-resume-state-store"]
+    description: |
+      Implement runner startup logic and summary output (quiet mode baseline).
+
+      Files:
+
+      * Create internal/run/runner.go
+      * Create internal/run/runner_test.go
+      * Modify internal/app/run_cmd.go
+
+      Requirements (runner start):
+
+      * Determine repo root (git)
+      * Validate `.gitignore` ignores; if missing:
+        * prompt to add; if --yes, auto-add
+      * Ensure .respawn/tasks.yaml exists; error out if missing
+      * Clean working tree rule:
+        * if no resume state: error out if dirty
+        * if resume state exists: resume anyway (bypass dirty check)
+      * Print summary counts: total/done/runnable/blocked/failed
+      * Do not execute tasks yet (that comes in later tasks)
+    acceptance:
+      - "internal/run/runner.go implements the preflight rules including resume bypass of clean-tree check"
+      - "Missing .respawn/tasks.yaml causes a clear error"
+      - "Runner prints counts summary in quiet mode (basic stdout is acceptable)"
+      - "internal/run/runner_test.go covers: dirty clean rules, missing tasks.yaml error, ignore-missing detection"
+    verify:
+      - ["go", "test", "./..."]
+    labels:
+      area: core
+      priority: P0
+
+  - id: respawn-runner-verify-command-executor
+    title: "Execute per-task verify commands via /bin/sh -lc and write logs"
+    parentId: respawn-epic-runner
+    dependsOn: ["respawn-run-artifacts-layout"]
+    description: |
+      Implement verification command runner.
+
+      Files:
+
+      * Create internal/run/verify.go
+      * Create internal/run/verify_test.go
+
+      Requirements:
+
+      * Input: []string verify commands (from tasks.yaml)
+      * Execute each command as: /bin/sh -lc "<cmd>"
+      * Capture stdout/stderr and duration
+      * Write per-gate logs to: .respawn/runs/<run-id>/verify/NN.log
+      * Stop at first failing command and return a structured error containing:
+        * failing command
+        * exit code
+        * pointer to log file path
+    acceptance:
+      - "internal/run/verify.go runs verify commands via /bin/sh -lc and stops on first failure"
+      - "Per-gate log files are written under verify/ with stable numbering"
+      - "internal/run/verify_test.go covers: success path, failure path, log file creation"
+      - "`go test ./...` passes"
+    verify:
+      - ["go", "test", "./..."]
+    labels:
+      area: core
+      priority: P0
+
+  - id: respawn-runner-task-execution-and-savepoint
+    title: "Execute one runnable task: prompt backend, run verify, update status, commit save point"
+    parentId: respawn-epic-runner
+    dependsOn: ["respawn-runner-preflight-and-summary", "respawn-tasks-dag-runnable-selection", "respawn-tasks-status-update", "respawn-git-savepoint-commit", "respawn-backend-interface-and-types", "respawn-opencode-backend-run-and-session", "respawn-claude-backend-run-and-flag-detect", "respawn-prompt-templates-and-builders", "respawn-runner-verify-command-executor"]
+    description: |
+      Implement the core “one task” execution path.
+
+      Files:
+
+      * Create internal/run/execute_task.go
+      * Create internal/run/execute_task_test.go
+      * Modify internal/run/runner.go
+
+      Requirements:
+
+      * Select the next runnable task (stable order)
+      * New task => new backend session
+      * Build implementation prompts (system+user) from internal/prompt
+      * Invoke backend with prompt via stdin; capture output to artifacts
+      * Run task verify commands
+      * If verify passes:
+        * update task status to done in .respawn/tasks.yaml
+        * commit with subject = task.commit_message and footer = `Respawn: <task-id>`
+      * Quiet output must include: TASK start, session id if available, verify summary, commit hash
+    acceptance:
+      - "internal/run/execute_task.go can execute exactly one runnable task end-to-end"
+      - "On success: .respawn/tasks.yaml status is updated to done and a git commit is created with `Respawn: <id>` footer"
+      - "On failure: no commit is created and failure details include pointers to artifact logs"
+      - "internal/run/execute_task_test.go covers success and failing-verify paths using fakes/mocks (no real backend execution)"
+    verify:
+      - ["go", "test", "./..."]
+    labels:
+      area: core
+      priority: P0
+
+  - id: respawn-runner-retry-reset-policy
+    title: "Implement 3x3 retry/reset policy with same-session retries and new-session resets"
+    parentId: respawn-epic-runner
+    dependsOn: ["respawn-runner-task-execution-and-savepoint", "respawn-git-reset-to-savepoint", "respawn-resume-state-store"]
+    description: |
+      Implement the full retry policy: attempts per cycle and cycles with reset to last save point.
+
+      Files:
+
+      * Create internal/run/retry.go
+      * Create internal/run/retry_test.go
+      * Modify internal/run/runner.go
+
+      Requirements:
+
+      * Policy inputs:
+        * attempts (inner), cycles (outer) from effective config defaults.retry
+      * Behavior:
+        * Retry failures up to attempts in the same cycle, reusing the same backend session best-effort.
+        * After attempts exhausted: reset repo to last save point commit, start new backend session, increment cycle.
+        * After cycles exhausted: mark task status failed and continue to other runnable tasks.
+      * Persist state in .respawn/state/run.json for resume:
+        * active task id, cycle/attempt, backend+session id, last save point
+      * Quiet output must include: cycle/attempt transitions and reset announcements.
+    acceptance:
+      - "internal/run/retry.go implements attempts+cycles policy and integrates git reset between cycles"
+      - "Retries in same cycle reuse the same backend session identifier when available"
+      - "After full exhaustion, task status is set to failed and runner continues"
+      - "internal/run/retry_test.go covers: attempt loop, reset between cycles, exhaustion -> failed"
+    verify:
+      - ["go", "test", "./..."]
+    labels:
+      area: core
+      priority: P0
+
+  - id: respawn-runner-full-dag-loop-and-exit-codes
+    title: "Loop over DAG until completion; compute blocked/failed summary; set exit codes"
+    parentId: respawn-epic-runner
+    dependsOn: ["respawn-runner-retry-reset-policy"]
+    description: |
+      Complete the runner to execute tasks until no runnable tasks remain, then exit with correct code.
+
+      Files:
+
+      * Modify internal/run/runner.go
+      * Create internal/run/runner_exit_test.go
+      * Modify internal/app/run_cmd.go
+
+      Requirements:
+
+      * Loop:
+        * while runnable tasks exist: execute next runnable task (with retry/reset handling)
+      * End conditions:
+        * no runnable tasks remain
+      * Summary:
+        * done/failed/blocked counts printed
+      * Exit codes:
+        * 0 if no failed tasks
+        * non-zero if any failed tasks OR fatal precondition errors occurred
+      * Resume state:
+        * clear .respawn/state/run.json when run finishes normally (no active task)
+    acceptance:
+      - "Runner executes all runnable tasks in dependency order until none remain"
+      - "Final summary includes done/failed/blocked counts"
+      - "Exit code is 0 when no task failed; non-zero if any task failed"
+      - "Resume state is cleared on normal completion"
+    verify:
+      - ["go", "test", "./..."]
+    labels:
+      area: core
+      priority: P0
+
+  - id: respawn-decomposer-generate-tasks-yaml
+    title: "Implement decomposer: read PRD, build decompose prompts, call backend, write .respawn/tasks.yaml"
+    parentId: respawn-epic-decomposer
+    dependsOn: ["respawn-add-decompose-command-skeleton", "respawn-config-merge-precedence", "respawn-backend-interface-and-types", "respawn-opencode-backend-run-and-session", "respawn-claude-backend-run-and-flag-detect", "respawn-prompt-templates-and-builders", "respawn-git-repo-root-and-dirty-check", "respawn-gitignore-validation-and-update"]
+    description: |
+      Implement `respawn decompose --prd <path>`.
+
+      Files:
+
+      * Create internal/decomposer/decomposer.go
+      * Create internal/decomposer/decomposer_test.go
+      * Modify internal/app/decompose_cmd.go
+
+      Requirements:
+
+      * Preflight (same as runner):
+        * detect repo root
+        * validate .gitignore required ignores; prompt to add; --yes auto-add
+      * Read PRD file from --prd path
+      * If .respawn/tasks.yaml exists:
+        * prompt to overwrite; --yes overwrites
+      * Build decomposer system prompt + user prompt (adopted from Ralph; adapted to Respawn schema)
+      * Invoke selected backend (same flag precedence as runner)
+      * Write resulting YAML to .respawn/tasks.yaml
+    acceptance:
+      - "internal/decomposer/decomposer.go reads PRD content and writes .respawn/tasks.yaml"
+      - "Existing tasks.yaml triggers overwrite prompt; --yes overwrites"
+      - "internal/app/decompose_cmd.go wires flags and calls decomposer"
+      - "internal/decomposer/decomposer_test.go covers: overwrite behavior, missing PRD file errors (using temp files)"
+    verify:
+      - ["go", "test", "./..."]
+    labels:
+      area: core
+      priority: P0
+
+  - id: respawn-decomposer-validate-and-retry-fix
+    title: "Validate generated .respawn/tasks.yaml and retry fix up to 2 times on errors"
+    parentId: respawn-epic-decomposer
+    dependsOn: ["respawn-decomposer-generate-tasks-yaml", "respawn-tasks-parse-respawn-tasks-yaml"]
+    description: |
+      Add validation + fix retry loop for decomposer output.
+
+      Files:
+
+      * Create internal/decomposer/validate.go
+      * Create internal/decomposer/validate_test.go
+      * Modify internal/decomposer/decomposer.go
+
+      Requirements:
+
+      * After generation, validate tasks.yaml by parsing + semantic checks (reuse internal/tasks validation).
+      * If invalid:
+        * build a fix prompt including: PRD, failed YAML, validation errors
+        * call backend again (text-only) to get corrected YAML
+        * retry up to 2 times (maxValidationRetries=2)
+      * On repeated failure: return a clear error with last validation errors.
+    acceptance:
+      - "internal/decomposer/validate.go implements parse+lint validation using internal/tasks"
+      - "On validation errors, decomposer retries up to 2 times using the fix prompt template"
+      - "internal/decomposer/validate_test.go covers: fix succeeds on retry, fix fails after max retries"
+    verify:
+      - ["go", "test", "./..."]
+    labels:
+      area: core
+      priority: P0
+
+  - id: respawn-add-docs-and-gitignore
+    title: "Add AGENTS.md, README.md, and ensure .gitignore includes Respawn ignores"
+    parentId: respawn-epic-docs
+    dependsOn: ["respawn-add-cobra-root"]
+    description: |
+      Add repository documentation and ensure the repo ignores Respawn artifacts.
+
+      Files:
+
+      * Create AGENTS.md (use the provided codestyle/safety guidance)
+      * Create README.md (usage: respawn, respawn decompose, config path, tasks file paths, flags)
+      * Modify .gitignore to include:
+        * .respawn/runs/
+        * .respawn/state/
+
+      Notes:
+
+      * Keep README concise but operational (copy-pasteable commands).
+    acceptance:
+      - "AGENTS.md exists and documents code style, safety boundaries, and verification expectations"
+      - "README.md documents: commands, flags, config file location, tasks.yaml location, run artifacts"
+      - ".gitignore ignores .respawn/runs/ and .respawn/state/"
+    verify:
+      - ["go", "test", "./..."]
+      - ["go", "build", "./..."]
+    labels:
+      area: docs
+      priority: P1
