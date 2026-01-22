@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"respawn/internal/config"
 	"respawn/internal/gitx"
 	"respawn/internal/state"
 	"respawn/internal/tasks"
@@ -15,12 +16,14 @@ type Runner struct {
 	RepoRoot string
 	Tasks    *tasks.TaskList
 	State    *state.RunState
+	Config   config.Defaults
 	Resume   bool
 }
 
 type Config struct {
 	AutoAddIgnore bool
 	Cwd           string
+	Defaults      config.Defaults
 }
 
 func NewRunner(ctx context.Context, cfg Config) (*Runner, error) {
@@ -91,6 +94,7 @@ func NewRunner(ctx context.Context, cfg Config) (*Runner, error) {
 		RepoRoot: repoRoot,
 		Tasks:    taskList,
 		State:    runState,
+		Config:   cfg.Defaults,
 		Resume:   exists,
 	}, nil
 }

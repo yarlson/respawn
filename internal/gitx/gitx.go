@@ -29,3 +29,14 @@ func IsDirty(ctx context.Context, repoRoot string) (bool, error) {
 	}
 	return len(strings.TrimSpace(string(out))) > 0, nil
 }
+
+// CurrentHash returns the current commit hash (HEAD).
+func CurrentHash(ctx context.Context, repoRoot string) (string, error) {
+	cmd := exec.CommandContext(ctx, "git", "rev-parse", "HEAD")
+	cmd.Dir = repoRoot
+	out, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("git rev-parse HEAD: %w", err)
+	}
+	return strings.TrimSpace(string(out)), nil
+}

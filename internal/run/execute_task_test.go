@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"respawn/internal/backends"
+	"respawn/internal/config"
 	"respawn/internal/state"
 	"respawn/internal/tasks"
 	"testing"
@@ -59,6 +60,7 @@ func TestExecuteTask_Success(t *testing.T) {
 		RepoRoot: repoDir,
 		Tasks:    taskList,
 		State:    &state.RunState{RunID: "test-run"},
+		Config:   config.Defaults{Retry: config.Retry{Attempts: 3, Cycles: 3}},
 	}
 
 	mock := &mockBackend{}
@@ -102,16 +104,17 @@ func TestExecuteTask_VerifyFailure(t *testing.T) {
 		RepoRoot: repoDir,
 		Tasks:    taskList,
 		State:    &state.RunState{RunID: "test-run"},
+		Config:   config.Defaults{Retry: config.Retry{Attempts: 3, Cycles: 3}},
 	}
 
 	mock := &mockBackend{}
 
 	err := r.ExecuteTask(ctx, mock)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "verification failed")
+	assert.Contains(t, err.Error(), "failed after 3 cycles")
 
-	// Verify status NOT updated to done
+	// Verify status updated to failed (policy exhausted)
 	updatedTasks, err := tasks.Load(tasksPath)
 	require.NoError(t, err)
-	assert.Equal(t, tasks.StatusTodo, updatedTasks.Tasks[0].Status)
+	assert.Equal(t, tasks.StatusFailed, updatedTasks.Tasks[0].Status)
 }
