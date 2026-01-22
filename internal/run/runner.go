@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"respawn/internal/backends"
 	"respawn/internal/config"
 	"respawn/internal/gitx"
 	"respawn/internal/state"
@@ -136,4 +137,37 @@ func (r *Runner) PrintSummary() {
 
 	fmt.Printf("Tasks: %d total, %d done, %d runnable, %d blocked, %d failed\n",
 		total, done, runnable, blocked, failed)
+}
+
+func (r *Runner) Run(ctx context.Context, backend backends.Backend) error {
+	for {
+		task := r.NextRunnableTask()
+		if task == nil {
+			break
+		}
+
+		// ExecuteTask handles its own retries/cycles and saves tasks.yaml
+		_ = r.ExecuteTask(ctx, backend)
+	}
+
+	r.PrintSummary()
+
+	// Exit code handling logic
+	var failed int
+	for _, t := range r.Tasks.Tasks {
+		if t.Status == tasks.StatusFailed {
+			failed++
+		}
+	}
+
+	// Normal completion - clear state
+	if err := state.Clear(r.RepoRoot); err != nil {
+		return fmt.Errorf("clear state: %w", err)
+	}
+
+	if failed > 0 {
+		return fmt.Errorf("%d tasks failed", failed)
+	}
+
+	return nil
 }

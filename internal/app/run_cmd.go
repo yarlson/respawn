@@ -3,6 +3,10 @@ package app
 import (
 	"fmt"
 
+	"respawn/internal/backends"
+	"respawn/internal/backends/claude"
+	"respawn/internal/backends/opencode"
+	"respawn/internal/config"
 	"respawn/internal/run"
 
 	"github.com/spf13/cobra"
@@ -12,11 +16,45 @@ import (
 func runCmd(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
+	cfg, err := config.Load()
+	if err != nil {
+		return err
+	}
+
 	r, err := run.NewRunner(ctx, run.Config{
 		AutoAddIgnore: globalYes,
+		Defaults:      cfg.Defaults,
 	})
 	if err != nil {
 		return err
+	}
+
+	backendName := globalBackend
+	if backendName == "" {
+		backendName = cfg.Defaults.Backend
+	}
+
+	bCfg, ok := cfg.Backends[backendName]
+	if !ok {
+		return fmt.Errorf("unknown backend: %s", backendName)
+	}
+
+	// Apply CLI overrides
+	if globalModel != "" {
+		bCfg.Model = globalModel
+	}
+	if globalVariant != "" {
+		bCfg.Variant = globalVariant
+	}
+
+	var backend backends.Backend
+	switch backendName {
+	case "opencode":
+		backend = opencode.New(bCfg)
+	case "claude":
+		backend = claude.New(bCfg.Command, bCfg.Args)
+	default:
+		return fmt.Errorf("unsupported backend: %s", backendName)
 	}
 
 	r.PrintSummary()
@@ -25,8 +63,7 @@ func runCmd(cmd *cobra.Command, args []string) error {
 		fmt.Printf("Resuming run %s\n", r.State.RunID)
 	}
 
-	// Task execution logic will be implemented in future tasks.
-	return nil
+	return r.Run(ctx, backend)
 }
 
 func init() {
