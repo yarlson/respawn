@@ -141,13 +141,27 @@ func (r *Runner) PrintSummary() {
 
 func (r *Runner) Run(ctx context.Context, backend backends.Backend) error {
 	for {
-		task := r.NextRunnableTask()
+		// 1. Check if we have an active task to resume
+		var task *tasks.Task
+		if r.Resume && r.State.ActiveTaskID != "" {
+			task = r.FindTaskByID(r.State.ActiveTaskID)
+			// If for some reason the task is not found or already done, fall back to next runnable
+			if task == nil || task.Status != tasks.StatusTodo {
+				task = r.NextRunnableTask()
+			}
+		} else {
+			task = r.NextRunnableTask()
+		}
+
 		if task == nil {
 			break
 		}
 
+		// Ensure we don't try to resume multiple times if we're in the loop
+		r.Resume = false
+
 		// ExecuteTask handles its own retries/cycles and saves tasks.yaml
-		_ = r.ExecuteTask(ctx, backend)
+		_ = r.ExecuteTaskWithTask(ctx, backend, task)
 	}
 
 	r.PrintSummary()

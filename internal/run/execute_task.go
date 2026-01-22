@@ -16,7 +16,11 @@ func (r *Runner) ExecuteTask(ctx context.Context, backend backends.Backend) erro
 	if task == nil {
 		return fmt.Errorf("no runnable tasks found")
 	}
+	return r.ExecuteTaskWithTask(ctx, backend, task)
+}
 
+// ExecuteTaskWithTask executes a specific task.
+func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend backends.Backend, task *tasks.Task) error {
 	fmt.Printf("TASK: %s (%s) start\n", task.Title, task.ID)
 
 	policy := &RetryPolicy{
@@ -119,6 +123,16 @@ func (r *Runner) NextRunnableTask() *tasks.Task {
 		}
 
 		if runnable {
+			return &r.Tasks.Tasks[i]
+		}
+	}
+	return nil
+}
+
+// FindTaskByID returns a task by its ID.
+func (r *Runner) FindTaskByID(id string) *tasks.Task {
+	for i, t := range r.Tasks.Tasks {
+		if t.ID == id {
 			return &r.Tasks.Tasks[i]
 		}
 	}
