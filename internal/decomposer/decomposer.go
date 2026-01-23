@@ -36,6 +36,7 @@ func (d *Decomposer) Decompose(ctx context.Context, prdPath string, artifactsDir
 	}
 
 	outputPath := ".respawn/tasks.yaml"
+	tasksPath := filepath.Join(d.RepoRoot, outputPath)
 
 	sessionID, err := d.Backend.StartSession(ctx, backends.SessionOptions{
 		WorkingDir:   d.RepoRoot,
@@ -48,7 +49,6 @@ func (d *Decomposer) Decompose(ctx context.Context, prdPath string, artifactsDir
 	// Combine system prompt with user prompt for backends that don't support separate system prompts
 	userPrompt := prompt.DecomposerSystemPrompt + "\n\n" + prompt.DecomposeUserPrompt(string(prdContent), outputPath)
 
-	var lastRes *backends.Result
 	var lastErr error
 	var taskList *tasks.TaskList
 
@@ -57,11 +57,19 @@ func (d *Decomposer) Decompose(ctx context.Context, prdPath string, artifactsDir
 		if err != nil {
 			return fmt.Errorf("send prompt: %w", err)
 		}
-		lastRes = res
 
+		// First, try to extract YAML from the backend's text output
 		tasksYAML := extractYAML(res.Output)
+
+		// If no YAML in output, check if the backend wrote the file directly (e.g., OpenCode uses tools)
 		if tasksYAML == "" {
-			lastErr = fmt.Errorf("no YAML found in backend response")
+			if fileContent, readErr := os.ReadFile(tasksPath); readErr == nil && len(fileContent) > 0 {
+				tasksYAML = string(fileContent)
+			}
+		}
+
+		if tasksYAML == "" {
+			lastErr = fmt.Errorf("no YAML found in backend response or output file")
 		} else {
 			taskList, lastErr = validateTasksYAML(tasksYAML)
 			if lastErr == nil {
@@ -70,7 +78,7 @@ func (d *Decomposer) Decompose(ctx context.Context, prdPath string, artifactsDir
 		}
 
 		if i < maxValidationRetries {
-			userPrompt = prompt.DecomposeFixPrompt(string(prdContent), extractYAML(lastRes.Output), lastErr.Error())
+			userPrompt = prompt.DecomposeFixPrompt(string(prdContent), tasksYAML, lastErr.Error())
 		}
 	}
 
@@ -78,7 +86,7 @@ func (d *Decomposer) Decompose(ctx context.Context, prdPath string, artifactsDir
 		return fmt.Errorf("decompose failed after %d retries: %w", maxValidationRetries, lastErr)
 	}
 
-	tasksPath := filepath.Join(d.RepoRoot, outputPath)
+	// Ensure directory exists and save the validated taskList
 	if err := os.MkdirAll(filepath.Dir(tasksPath), 0755); err != nil {
 		return fmt.Errorf("create .respawn dir: %w", err)
 	}
