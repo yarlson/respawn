@@ -54,7 +54,7 @@ func runAgents(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	backend, model, err := resolveBackend(cfg, "slow")
+	backend, model, variant, err := resolveBackend(cfg, "slow")
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,7 @@ func runAgents(cmd *cobra.Command, _ []string) error {
 	cancel := spinner.Start(ctx)
 	defer cancel()
 
-	if err := generator.Generate(ctx, agentsPrdPath, artifacts.Root(), model); err != nil {
+	if err := generator.Generate(ctx, agentsPrdPath, artifacts.Root(), model, variant); err != nil {
 		spinner.Fail(fmt.Sprintf("Failed: %v", err))
 		return err
 	}

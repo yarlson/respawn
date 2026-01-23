@@ -37,26 +37,28 @@ func Merge(cfg *Config, overrides Overrides) *EffectiveConfig {
 		eff.Backend = overrides.Backend
 	}
 
-	var modelFast, modelSlow string
+	var fast, slow Model
 	if b, ok := cfg.Backends[eff.Backend]; ok {
 		eff.Command = b.Command
 		eff.Args = b.Args
-		eff.Variant = b.Variant
-		modelFast = b.Models.Fast
-		modelSlow = b.Models.Slow
+		fast = b.Models.Fast
+		slow = b.Models.Slow
 	}
 
 	switch overrides.Model {
 	case "fast":
-		eff.Model = modelFast
+		eff.Model = fast.Name
+		eff.Variant = fast.Variant
 	case "slow":
-		eff.Model = modelSlow
+		eff.Model = slow.Name
+		eff.Variant = slow.Variant
 	case "":
 		// No override - leave empty, command must specify
 	default:
 		eff.Model = overrides.Model
 	}
 
+	// CLI variant override takes precedence
 	if overrides.Variant != "" {
 		eff.Variant = overrides.Variant
 	}

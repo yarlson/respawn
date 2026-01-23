@@ -83,6 +83,15 @@ func (b *Backend) Send(ctx context.Context, sessionID string, prompt string, opt
 		cmdArgs = append(cmdArgs, "--model", model)
 	}
 
+	// Warn if variant is specified - Claude CLI doesn't support it
+	variant := opts.Variant
+	if variant == "" {
+		variant = info.opts.Variant
+	}
+	if variant != "" {
+		slog.Warn("variant is not supported by Claude CLI, ignoring", "variant", variant)
+	}
+
 	useContinue := false
 	if info.hasStarted {
 		if caps.HasContinue {

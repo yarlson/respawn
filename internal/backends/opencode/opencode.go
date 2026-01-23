@@ -52,7 +52,7 @@ func (b *OpenCode) StartSession(ctx context.Context, opts backends.SessionOption
 	return sessionID, nil
 }
 
-func (b *OpenCode) buildCommandArgs(info *sessionInfo, modelOverride string) ([]string, string) {
+func (b *OpenCode) buildCommandArgs(info *sessionInfo, modelOverride, variantOverride string) ([]string, string) {
 	cmdArgs := append([]string{}, b.cfg.Args...)
 
 	// Ensure 'run' command is present
@@ -79,21 +79,19 @@ func (b *OpenCode) buildCommandArgs(info *sessionInfo, modelOverride string) ([]
 		cmdArgs = append(cmdArgs, "--format", "json")
 	}
 
-	// Model priority: SendOptions override > SessionOptions > config default
+	// Model priority: SendOptions override > SessionOptions
 	model := modelOverride
 	if model == "" {
 		model = info.opts.Model
-	}
-	if model == "" {
-		model = b.cfg.Models.Slow
 	}
 	if model != "" {
 		cmdArgs = append(cmdArgs, "--model", model)
 	}
 
-	variant := info.opts.Variant
+	// Variant priority: SendOptions override > SessionOptions
+	variant := variantOverride
 	if variant == "" {
-		variant = b.cfg.Variant
+		variant = info.opts.Variant
 	}
 	if variant != "" {
 		cmdArgs = append(cmdArgs, "--variant", variant)
@@ -124,7 +122,7 @@ func (b *OpenCode) Send(ctx context.Context, sessionID string, prompt string, op
 	}
 	b.mu.Unlock()
 
-	cmdArgs, warning := b.buildCommandArgs(info, opts.Model)
+	cmdArgs, warning := b.buildCommandArgs(info, opts.Model, opts.Variant)
 	if warning != "" {
 		slog.Warn(warning, "session_id", sessionID)
 	}

@@ -52,6 +52,7 @@ turbine [flags]
 Reads tasks from `.turbine/tasks.yaml` and executes each one using the configured backend.
 
 Each command prints the backend and model being used:
+
 ```
 Using backend: claude, model: claude-3-5-sonnet-latest
 ```
@@ -131,26 +132,30 @@ Configure in `~/.config/turbine/turbine.yaml`:
 
 ```yaml
 backends:
+  opencode:
+    command: opencode
+    models:
+      fast:
+        name: anthropic/claude-haiku-4.5
+        variant: low
+      slow: anthropic/claude-opus-4-5
   claude:
     command: claude
     models:
       fast: claude-3-5-sonnet-latest
       slow: claude-4-5-opus-latest
-  opencode:
-    command: opencode
-    models:
-      fast: anthropic/claude-sonnet
-      slow: anthropic/claude-opus-4-5
 ```
+
+The `variant` field is a model modifier for reasoning effort (OpenCode only). Each model can have its own variant.
 
 Override at runtime:
 
 ```bash
-# Use fast model explicitly
-turbine load --prd PRD.md --variant fast
+# Override model for all operations
+turbine --model anthropic/claude-sonnet
 
-# Use slow model explicitly
-turbine agents --prd PRD.md --variant slow
+# Override variant (OpenCode only)
+turbine --variant high
 ```
 
 ### Tasks File

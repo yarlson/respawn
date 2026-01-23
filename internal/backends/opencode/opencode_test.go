@@ -26,27 +26,20 @@ func TestBuildCommandArgs(t *testing.T) {
 			expected: []string{"run", "--format", "json"},
 		},
 		{
-			name: "with model and variant from config",
+			name: "with model and variant from session opts",
 			cfg: config.Backend{
 				Command: "opencode",
-				Models: config.Models{
-					Slow: "m1",
-					Fast: "m1-fast",
-				},
+			},
+			opts: backends.SessionOptions{
+				Model:   "m1",
 				Variant: "v1",
 			},
-			opts:     backends.SessionOptions{},
 			expected: []string{"run", "--format", "json", "--model", "m1", "--variant", "v1"},
 		},
 		{
 			name: "override model and variant from opts",
 			cfg: config.Backend{
 				Command: "opencode",
-				Models: config.Models{
-					Slow: "m1",
-					Fast: "m1-fast",
-				},
-				Variant: "v1",
 			},
 			opts: backends.SessionOptions{
 				Model:   "m2",
@@ -92,7 +85,7 @@ func TestBuildCommandArgs(t *testing.T) {
 				hasStarted:        tt.hasStarted,
 				externalSessionID: tt.extID,
 			}
-			args, _ := b.buildCommandArgs(info, "") // empty model override
+			args, _ := b.buildCommandArgs(info, "", "") // empty model/variant override
 			assert.Equal(t, tt.expected, args)
 		})
 	}

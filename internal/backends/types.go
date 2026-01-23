@@ -17,6 +17,8 @@ type SendOptions struct {
 	// Model overrides the session's default model for this specific message.
 	// If empty, uses the session's model.
 	Model string
+	// Variant overrides the session's variant for this specific message.
+	Variant string
 }
 
 // Result captures the outcome of a Send operation.

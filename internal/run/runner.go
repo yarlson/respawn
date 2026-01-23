@@ -152,9 +152,8 @@ func (r *Runner) PrintSummary() {
 	)
 }
 
-// Run executes tasks from the manifest using the provided backend and model.
-// model is the LLM model to use for task execution (typically the "fast" model for implementation).
-func (r *Runner) Run(ctx context.Context, backend backends.Backend, model string) error {
+// Run executes tasks from the manifest using the provided backend, model, and variant.
+func (r *Runner) Run(ctx context.Context, backend backends.Backend, model, variant string) error {
 	for {
 		// 1. Check if we have an active task to resume
 		var task *tasks.Task
@@ -176,7 +175,7 @@ func (r *Runner) Run(ctx context.Context, backend backends.Backend, model string
 		r.Resume = false
 
 		// ExecuteTask handles its own retries/rotations and saves tasks.yaml
-		_ = r.ExecuteTaskWithTask(ctx, backend, task, model)
+		_ = r.ExecuteTaskWithTask(ctx, backend, task, model, variant)
 	}
 
 	r.PrintSummary()

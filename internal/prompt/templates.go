@@ -99,6 +99,10 @@ Verify commands
 - If source code is in a subdirectory (e.g., cmd/app/main.go), build outputs must not collide with directory names.
 - To verify output contains text: cmd 2>&1 | grep -q "expected"
 - To verify command exits non-zero: ! cmd
+- IMPORTANT: Do NOT combine ! with grep. "! cmd | grep -q text" means "grep should NOT find text" (usually wrong).
+  Instead, use separate commands:
+    - ! cmd              # verify cmd exits non-zero
+    - cmd 2>&1 | grep -q text  # verify output contains text
 
 Before writing
 Validate that:

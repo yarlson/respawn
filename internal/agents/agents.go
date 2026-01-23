@@ -24,8 +24,7 @@ func New(backend backends.Backend, repoRoot string) *Generator {
 // Generate instructs the coding agent to create AGENTS.md, supporting docs/,
 // and CLAUDE.md symlink with progressive disclosure principles.
 // The agent writes files directly using its tools (file write, mkdir, ln -s, etc.).
-// model specifies which LLM model to use for this generation.
-func (g *Generator) Generate(ctx context.Context, prdPath string, artifactsDir string, model string) error {
+func (g *Generator) Generate(ctx context.Context, prdPath string, artifactsDir string, model, variant string) error {
 	prdContent, err := os.ReadFile(prdPath)
 	if err != nil {
 		return fmt.Errorf("read PRD: %w", err)
@@ -35,6 +34,7 @@ func (g *Generator) Generate(ctx context.Context, prdPath string, artifactsDir s
 		WorkingDir:   g.repoRoot,
 		ArtifactsDir: artifactsDir,
 		Model:        model,
+		Variant:      variant,
 	})
 	if err != nil {
 		return fmt.Errorf("start session: %w", err)

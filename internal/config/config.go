@@ -26,10 +26,37 @@ type Retry struct {
 	Strokes   int `yaml:"strokes"`
 }
 
+// Model holds a model name and optional variant.
+type Model struct {
+	Name    string `yaml:"name"`
+	Variant string `yaml:"variant,omitempty"`
+}
+
+// UnmarshalYAML supports both string and struct format for backward compatibility.
+// String format: "model-name"
+// Struct format: {name: "model-name", variant: "high"}
+func (m *Model) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	// Try string first (backward compat)
+	var s string
+	if err := unmarshal(&s); err == nil {
+		m.Name = s
+		return nil
+	}
+
+	// Try struct
+	type modelAlias Model
+	var alias modelAlias
+	if err := unmarshal(&alias); err != nil {
+		return err
+	}
+	*m = Model(alias)
+	return nil
+}
+
 // Models holds model configurations for different use cases.
 type Models struct {
-	Fast string `yaml:"fast"` // Used for implementation tasks
-	Slow string `yaml:"slow"` // Used for AGENTS.md and tasks.yaml generation
+	Fast Model `yaml:"fast"` // Used for implementation tasks
+	Slow Model `yaml:"slow"` // Used for AGENTS.md and tasks.yaml generation
 }
 
 // Backend holds configuration for a specific agent backend.
@@ -37,7 +64,6 @@ type Backend struct {
 	Command string   `yaml:"command"`
 	Args    []string `yaml:"args"`
 	Models  Models   `yaml:"models"`
-	Variant string   `yaml:"variant,omitempty"`
 }
 
 // DefaultConfig returns a Config with hardcoded defaults.
@@ -56,16 +82,16 @@ func DefaultConfig() *Config {
 				Command: "opencode",
 				Args:    []string{},
 				Models: Models{
-					Slow: "anthropic/claude-opus-4-5", // For AGENTS.md, tasks.yaml generation
-					Fast: "anthropic/claude-sonnet",   // For implementation
+					Slow: Model{Name: "anthropic/claude-opus-4-5"},
+					Fast: Model{Name: "anthropic/claude-sonnet"},
 				},
 			},
 			"claude": {
 				Command: "claude",
 				Args:    []string{"-p", "--dangerously-skip-permissions"},
 				Models: Models{
-					Slow: "claude-4-5-opus-latest",   // For AGENTS.md, tasks.yaml generation
-					Fast: "claude-3-5-sonnet-latest", // For implementation
+					Slow: Model{Name: "claude-4-5-opus-latest"},
+					Fast: Model{Name: "claude-3-5-sonnet-latest"},
 				},
 			},
 		},

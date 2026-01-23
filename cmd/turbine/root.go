@@ -45,7 +45,7 @@ type namedBackend struct {
 
 func (b *namedBackend) Name() string { return b.name }
 
-func resolveBackend(cfg *config.Config, defaultModel string) (*namedBackend, string, error) {
+func resolveBackend(cfg *config.Config, defaultModel string) (*namedBackend, string, string, error) {
 	modelOverride := globalModel
 	if modelOverride == "" {
 		modelOverride = defaultModel
@@ -59,7 +59,7 @@ func resolveBackend(cfg *config.Config, defaultModel string) (*namedBackend, str
 
 	bCfg, ok := cfg.Backends[effCfg.Backend]
 	if !ok {
-		return nil, "", fmt.Errorf("unknown backend: %s", effCfg.Backend)
+		return nil, "", "", fmt.Errorf("unknown backend: %s", effCfg.Backend)
 	}
 
 	var backend backends.Backend
@@ -69,15 +69,15 @@ func resolveBackend(cfg *config.Config, defaultModel string) (*namedBackend, str
 	case "claude":
 		backend = claude.New(bCfg)
 	default:
-		return nil, "", fmt.Errorf("unsupported backend: %s", effCfg.Backend)
+		return nil, "", "", fmt.Errorf("unsupported backend: %s", effCfg.Backend)
 	}
 
-	return &namedBackend{Backend: backend, name: effCfg.Backend}, effCfg.Model, nil
+	return &namedBackend{Backend: backend, name: effCfg.Backend}, effCfg.Model, effCfg.Variant, nil
 }
 
-// resolveBackendWithModels returns a backend and both fast/slow model names.
+// resolveBackendWithModels returns a backend and both fast/slow model configs.
 // Used for two-phase operations like decompose that need both models.
-func resolveBackendWithModels(cfg *config.Config) (*namedBackend, string, string, error) {
+func resolveBackendWithModels(cfg *config.Config) (*namedBackend, config.Model, config.Model, error) {
 	backendName := globalBackend
 	if backendName == "" {
 		backendName = cfg.Defaults.Backend
@@ -85,12 +85,7 @@ func resolveBackendWithModels(cfg *config.Config) (*namedBackend, string, string
 
 	bCfg, ok := cfg.Backends[backendName]
 	if !ok {
-		return nil, "", "", fmt.Errorf("unknown backend: %s", backendName)
-	}
-
-	// Apply variant override
-	if globalVariant != "" {
-		bCfg.Variant = globalVariant
+		return nil, config.Model{}, config.Model{}, fmt.Errorf("unknown backend: %s", backendName)
 	}
 
 	var backend backends.Backend
@@ -100,16 +95,21 @@ func resolveBackendWithModels(cfg *config.Config) (*namedBackend, string, string
 	case "claude":
 		backend = claude.New(bCfg)
 	default:
-		return nil, "", "", fmt.Errorf("unsupported backend: %s", backendName)
+		return nil, config.Model{}, config.Model{}, fmt.Errorf("unsupported backend: %s", backendName)
 	}
 
-	// If user specified a model, use it for both (override behavior)
-	fastModel := bCfg.Models.Fast
-	slowModel := bCfg.Models.Slow
+	fast := bCfg.Models.Fast
+	slow := bCfg.Models.Slow
+
+	// CLI overrides
 	if globalModel != "" {
-		fastModel = globalModel
-		slowModel = globalModel
+		fast.Name = globalModel
+		slow.Name = globalModel
+	}
+	if globalVariant != "" {
+		fast.Variant = globalVariant
+		slow.Variant = globalVariant
 	}
 
-	return &namedBackend{Backend: backend, name: backendName}, fastModel, slowModel, nil
+	return &namedBackend{Backend: backend, name: backendName}, fast, slow, nil
 }

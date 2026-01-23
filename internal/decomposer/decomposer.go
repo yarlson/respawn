@@ -19,9 +19,11 @@ type Decomposer struct {
 // DecomposeOptions configures the two-phase decomposition process.
 type DecomposeOptions struct {
 	// FastModel is used for Phase 1: codebase exploration
-	FastModel string
+	FastModel   string
+	FastVariant string
 	// SlowModel is used for Phase 2: task generation
-	SlowModel string
+	SlowModel   string
+	SlowVariant string
 	// ArtifactsDir is the path where stdout/stderr and other run data should be captured
 	ArtifactsDir string
 }
@@ -61,7 +63,8 @@ func (d *Decomposer) Decompose(ctx context.Context, prdPath string, opts Decompo
 	// Phase 1: Explore codebase with fast model
 	explorePrompt := prompt.ExploreSystemPrompt + "\n\n" + prompt.ExploreUserPrompt(string(prdContent))
 	_, err = d.backend.Send(ctx, sessionID, explorePrompt, backends.SendOptions{
-		Model: opts.FastModel,
+		Model:   opts.FastModel,
+		Variant: opts.FastVariant,
 	})
 	if err != nil {
 		return fmt.Errorf("explore phase: %w", err)
@@ -74,7 +77,8 @@ func (d *Decomposer) Decompose(ctx context.Context, prdPath string, opts Decompo
 
 	for i := 0; i <= maxValidationRetries; i++ {
 		_, err := d.backend.Send(ctx, sessionID, decomposePrompt, backends.SendOptions{
-			Model: opts.SlowModel,
+			Model:   opts.SlowModel,
+			Variant: opts.SlowVariant,
 		})
 		if err != nil {
 			return fmt.Errorf("send prompt: %w", err)

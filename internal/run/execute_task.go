@@ -12,19 +12,17 @@ import (
 	"github.com/yarlson/turbine/internal/ui"
 )
 
-// ExecuteTask selects and executes the next runnable task using the provided model.
-// model is the LLM model to use for task execution (typically the "fast" model).
-func (r *Runner) ExecuteTask(ctx context.Context, backend backends.Backend, model string) error {
+// ExecuteTask selects and executes the next runnable task using the provided model and variant.
+func (r *Runner) ExecuteTask(ctx context.Context, backend backends.Backend, model, variant string) error {
 	task := r.NextRunnableTask()
 	if task == nil {
 		return fmt.Errorf("no runnable tasks found")
 	}
-	return r.ExecuteTaskWithTask(ctx, backend, task, model)
+	return r.ExecuteTaskWithTask(ctx, backend, task, model, variant)
 }
 
-// ExecuteTaskWithTask executes a single task with the given model.
-// model is the LLM model to use for this task execution.
-func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend backends.Backend, task *tasks.Task, model string) error {
+// ExecuteTaskWithTask executes a single task with the given model and variant.
+func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend backends.Backend, task *tasks.Task, model, variant string) error {
 	fmt.Printf("%s %s\n", ui.Section("›", ui.Bold(task.Title)), ui.Dim(fmt.Sprintf("[%s]", task.ID)))
 
 	policy := &RetryPolicy{
@@ -46,6 +44,7 @@ func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend backends.Backe
 				WorkingDir:   r.RepoRoot,
 				ArtifactsDir: arts.Root(),
 				Model:        model,
+				Variant:      variant,
 			})
 			if err != nil {
 				return fmt.Errorf("start session: %w", err)

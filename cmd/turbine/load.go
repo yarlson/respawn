@@ -106,13 +106,15 @@ func runLoad(cmd *cobra.Command) error {
 	}
 
 	d := decomposer.New(backend, repoRoot)
-	spinner := ui.NewSpinner(fmt.Sprintf("Generating tasks from %s (%s, explore: %s, generate: %s)...", prdPath, backend.Name(), fastModel, slowModel))
+	spinner := ui.NewSpinner(fmt.Sprintf("Generating tasks from %s (%s, explore: %s, generate: %s)...", prdPath, backend.Name(), fastModel.Name, slowModel.Name))
 	cancel := spinner.Start(ctx)
 	defer cancel()
 
 	if err := d.Decompose(ctx, prdPath, decomposer.DecomposeOptions{
-		FastModel:    fastModel,
-		SlowModel:    slowModel,
+		FastModel:    fastModel.Name,
+		FastVariant:  fastModel.Variant,
+		SlowModel:    slowModel.Name,
+		SlowVariant:  slowModel.Variant,
 		ArtifactsDir: artifacts.Root(),
 	}); err != nil {
 		spinner.Fail(fmt.Sprintf("Failed: %v", err))

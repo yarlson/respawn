@@ -66,7 +66,7 @@ func TestExecuteTask_Success(t *testing.T) {
 
 	mock := &mockBackend{}
 
-	err := r.ExecuteTask(ctx, mock, "claude-3-5-sonnet")
+	err := r.ExecuteTask(ctx, mock, "claude-3-5-sonnet", "")
 	assert.NoError(t, err)
 
 	// Verify status updated
@@ -110,7 +110,7 @@ func TestExecuteTask_VerifyFailure(t *testing.T) {
 
 	mock := &mockBackend{}
 
-	err := r.ExecuteTask(ctx, mock, "claude-3-5-sonnet")
+	err := r.ExecuteTask(ctx, mock, "claude-3-5-sonnet", "")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed after 3 rotations")
 

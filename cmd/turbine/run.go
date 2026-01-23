@@ -24,7 +24,7 @@ func runCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	backend, model, err := resolveBackend(cfg, "fast")
+	backend, model, variant, err := resolveBackend(cfg, "fast")
 	if err != nil {
 		return err
 	}
@@ -36,7 +36,7 @@ func runCmd(cmd *cobra.Command, args []string) error {
 		fmt.Printf("Continuing from checkpoint: %s\n", r.State.RunID)
 	}
 
-	return r.Run(ctx, backend, model)
+	return r.Run(ctx, backend, model, variant)
 }
 
 func init() {
