@@ -9,34 +9,32 @@ import (
 	"github.com/yarlson/turbine/internal/prompt"
 )
 
-type Backend interface {
-	backends.Backend
-}
-
 type Generator struct {
-	Backend  Backend
-	RepoRoot string
+	backend  backends.Backend
+	repoRoot string
 }
 
 func New(backend backends.Backend, repoRoot string) *Generator {
 	return &Generator{
-		Backend:  backend,
-		RepoRoot: repoRoot,
+		backend:  backend,
+		repoRoot: repoRoot,
 	}
 }
 
 // Generate instructs the coding agent to create AGENTS.md, supporting docs/,
 // and CLAUDE.md symlink with progressive disclosure principles.
 // The agent writes files directly using its tools (file write, mkdir, ln -s, etc.).
-func (g *Generator) Generate(ctx context.Context, prdPath string, artifactsDir string) error {
+// model specifies which LLM model to use for this generation.
+func (g *Generator) Generate(ctx context.Context, prdPath string, artifactsDir string, model string) error {
 	prdContent, err := os.ReadFile(prdPath)
 	if err != nil {
 		return fmt.Errorf("read PRD: %w", err)
 	}
 
-	sessionID, err := g.Backend.StartSession(ctx, backends.SessionOptions{
-		WorkingDir:   g.RepoRoot,
+	sessionID, err := g.backend.StartSession(ctx, backends.SessionOptions{
+		WorkingDir:   g.repoRoot,
 		ArtifactsDir: artifactsDir,
+		Model:        model,
 	})
 	if err != nil {
 		return fmt.Errorf("start session: %w", err)
@@ -45,7 +43,7 @@ func (g *Generator) Generate(ctx context.Context, prdPath string, artifactsDir s
 	// Instruct the coding agent to generate and write all files
 	userPrompt := prompt.AgentsSystemPrompt + "\n\n" + prompt.AgentsUserPrompt(string(prdContent))
 
-	_, err = g.Backend.Send(ctx, sessionID, userPrompt, backends.SendOptions{})
+	_, err = g.backend.Send(ctx, sessionID, userPrompt, backends.SendOptions{})
 	if err != nil {
 		return fmt.Errorf("send prompt: %w", err)
 	}
@@ -61,13 +59,13 @@ func (g *Generator) Generate(ctx context.Context, prdPath string, artifactsDir s
 // validateOutput checks that the agent created the required files.
 func (g *Generator) validateOutput() error {
 	// Check AGENTS.md exists
-	agentsPath := g.RepoRoot + "/AGENTS.md"
+	agentsPath := g.repoRoot + "/AGENTS.md"
 	if _, err := os.Stat(agentsPath); os.IsNotExist(err) {
 		return fmt.Errorf("AGENTS.md was not created")
 	}
 
 	// Check CLAUDE.md symlink exists
-	claudePath := g.RepoRoot + "/CLAUDE.md"
+	claudePath := g.repoRoot + "/CLAUDE.md"
 	info, err := os.Lstat(claudePath)
 	if os.IsNotExist(err) {
 		return fmt.Errorf("CLAUDE.md symlink was not created")

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/yarlson/turbine/internal/backends"
+	"github.com/yarlson/turbine/internal/config"
 )
 
 type sessionInfo struct {
@@ -20,28 +21,24 @@ type sessionInfo struct {
 	hasStarted bool
 }
 
-// ClaudeBackend implements the backends.Backend interface for Claude Code.
-type ClaudeBackend struct {
-	command  string
-	args     []string
+type Backend struct {
+	cfg      config.Backend
 	sessions map[string]*sessionInfo
 	mu       sync.RWMutex
 }
 
-// New creates a new ClaudeBackend with the given command and arguments.
-func New(command string, args []string) *ClaudeBackend {
-	if command == "" {
-		command = "claude"
+func New(cfg config.Backend) *Backend {
+	if cfg.Command == "" {
+		cfg.Command = "claude"
 	}
-	return &ClaudeBackend{
-		command:  command,
-		args:     args,
+	return &Backend{
+		cfg:      cfg,
 		sessions: make(map[string]*sessionInfo),
 	}
 }
 
 // StartSession initializes a new session and returns a session ID.
-func (b *ClaudeBackend) StartSession(ctx context.Context, opts backends.SessionOptions) (string, error) {
+func (b *Backend) StartSession(ctx context.Context, opts backends.SessionOptions) (string, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -64,8 +61,7 @@ func (b *ClaudeBackend) StartSession(ctx context.Context, opts backends.SessionO
 	return sessionID, nil
 }
 
-// Send transmits a prompt to Claude and returns the result.
-func (b *ClaudeBackend) Send(ctx context.Context, sessionID string, prompt string, opts backends.SendOptions) (*backends.Result, error) {
+func (b *Backend) Send(ctx context.Context, sessionID string, prompt string, opts backends.SendOptions) (*backends.Result, error) {
 	b.mu.Lock()
 	info, ok := b.sessions[sessionID]
 	if !ok {
@@ -74,9 +70,14 @@ func (b *ClaudeBackend) Send(ctx context.Context, sessionID string, prompt strin
 	}
 	b.mu.Unlock()
 
-	caps := DetectCapabilities(ctx, b.command)
+	caps := DetectCapabilities(ctx, b.cfg.Command)
 
-	cmdArgs := append([]string{}, b.args...)
+	cmdArgs := append([]string{}, b.cfg.Args...)
+
+	// Apply model from session options
+	if info.opts.Model != "" {
+		cmdArgs = append(cmdArgs, "--model", info.opts.Model)
+	}
 
 	useContinue := false
 	if info.hasStarted {
@@ -91,7 +92,7 @@ func (b *ClaudeBackend) Send(ctx context.Context, sessionID string, prompt strin
 		}
 	}
 
-	cmd := exec.CommandContext(ctx, b.command, cmdArgs...)
+	cmd := exec.CommandContext(ctx, b.cfg.Command, cmdArgs...)
 	cmd.Dir = info.opts.WorkingDir
 	cmd.Stdin = strings.NewReader(prompt)
 
@@ -130,7 +131,7 @@ func (b *ClaudeBackend) Send(ctx context.Context, sessionID string, prompt strin
 		Output: stdout,
 		Metadata: map[string]string{
 			"session_id": sessionID,
-			"command":    b.command,
+			"command":    b.cfg.Command,
 		},
 	}, nil
 }

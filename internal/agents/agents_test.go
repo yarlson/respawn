@@ -66,7 +66,7 @@ func TestValidateOutput(t *testing.T) {
 				t.Fatalf("setup failed: %v", err)
 			}
 
-			g := &Generator{RepoRoot: tmpDir}
+			g := &Generator{repoRoot: tmpDir}
 			err := g.validateOutput()
 
 			if tt.expectError {

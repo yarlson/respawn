@@ -3,16 +3,11 @@ package turbine
 import (
 	"fmt"
 
-	"github.com/yarlson/turbine/internal/backends"
-	"github.com/yarlson/turbine/internal/backends/claude"
-	"github.com/yarlson/turbine/internal/backends/opencode"
+	"github.com/spf13/cobra"
 	"github.com/yarlson/turbine/internal/config"
 	"github.com/yarlson/turbine/internal/run"
-
-	"github.com/spf13/cobra"
 )
 
-// runCmd is the action for the root command when invoked without subcommands.
 func runCmd(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
@@ -29,38 +24,19 @@ func runCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	backendName := globalBackend
-	if backendName == "" {
-		backendName = cfg.Defaults.Backend
-	}
-
-	bCfg, ok := cfg.Backends[backendName]
-	if !ok {
-		return fmt.Errorf("unknown backend: %s", backendName)
-	}
-
-	// Apply CLI overrides (variant only, model selection happens via SessionOptions)
-	if globalVariant != "" {
-		bCfg.Variant = globalVariant
-	}
-
-	var backend backends.Backend
-	switch backendName {
-	case "opencode":
-		backend = opencode.New(bCfg)
-	case "claude":
-		backend = claude.New(bCfg.Command, bCfg.Args)
-	default:
-		return fmt.Errorf("unsupported backend: %s", backendName)
+	backend, model, err := resolveBackend(cfg, "fast")
+	if err != nil {
+		return err
 	}
 
 	r.PrintSummary()
+	fmt.Printf("Using backend: %s, model: %s\n", backend.Name(), model)
 
 	if r.Resume {
 		fmt.Printf("Continuing from checkpoint: %s\n", r.State.RunID)
 	}
 
-	return r.Run(ctx, backend)
+	return r.Run(ctx, backend, model)
 }
 
 func init() {

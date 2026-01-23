@@ -47,10 +47,3 @@ func ParseOutput(output string) (text string, sessionID string) {
 	text = strings.Join(textParts, "\n")
 	return text, sessionID
 }
-
-// parseSessionID extracts the session ID from the raw output string.
-// It looks for a JSON object in the output and attempts to unmarshal it.
-func parseSessionID(output string) string {
-	_, sessionID := ParseOutput(output)
-	return sessionID
-}

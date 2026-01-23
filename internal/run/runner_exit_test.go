@@ -53,7 +53,7 @@ func TestRunner_Run_ExitCodes(t *testing.T) {
 		}
 
 		mock := &mockBackend{}
-		err := r.Run(ctx, mock)
+		err := r.Run(ctx, mock, "claude-3-5-sonnet")
 		assert.NoError(t, err)
 
 		// Verify state is cleared
@@ -94,7 +94,7 @@ func TestRunner_Run_ExitCodes(t *testing.T) {
 		}
 
 		mock := &mockBackend{}
-		err := r.Run(ctx, mock)
+		err := r.Run(ctx, mock, "claude-3-5-sonnet")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "1 tasks failed")
 

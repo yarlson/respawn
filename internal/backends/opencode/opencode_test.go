@@ -98,37 +98,38 @@ func TestBuildCommandArgs(t *testing.T) {
 	}
 }
 
-func TestParseSessionID(t *testing.T) {
+func TestParseOutput(t *testing.T) {
 	tests := []struct {
-		name     string
-		output   string
-		expected string
+		name      string
+		output    string
+		sessionID string
 	}{
 		{
-			name:     "valid json",
-			output:   `{"sessionID": "sid123", "output": "hello"}`,
-			expected: "sid123",
+			name:      "valid json",
+			output:    `{"sessionID": "sid123", "output": "hello"}`,
+			sessionID: "sid123",
 		},
 		{
-			name:     "json with prefix",
-			output:   "Welcome!\n" + `{"sessionID": "sid456"}`,
-			expected: "sid456",
+			name:      "json with prefix",
+			output:    "Welcome!\n" + `{"sessionID": "sid456"}`,
+			sessionID: "sid456",
 		},
 		{
-			name:     "no json",
-			output:   "just some text",
-			expected: "",
+			name:      "no json",
+			output:    "just some text",
+			sessionID: "",
 		},
 		{
-			name:     "empty session id",
-			output:   `{"output": "no session"}`,
-			expected: "",
+			name:      "empty session id",
+			output:    `{"output": "no session"}`,
+			sessionID: "",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, parseSessionID(tt.output))
+			_, sid := ParseOutput(tt.output)
+			assert.Equal(t, tt.sessionID, sid)
 		})
 	}
 }

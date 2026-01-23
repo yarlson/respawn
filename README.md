@@ -51,6 +51,11 @@ turbine [flags]
 
 Reads tasks from `.turbine/tasks.yaml` and executes each one using the configured backend.
 
+Each command prints the backend and model being used:
+```
+Using backend: claude, model: claude-3-5-sonnet-latest
+```
+
 ### Generate Project Guidelines
 
 ```bash

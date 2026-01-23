@@ -7,15 +7,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/yarlson/turbine/internal/backends/claude"
-	"github.com/yarlson/turbine/internal/backends/opencode"
+	"github.com/spf13/cobra"
 	"github.com/yarlson/turbine/internal/config"
 	"github.com/yarlson/turbine/internal/decomposer"
 	"github.com/yarlson/turbine/internal/gitx"
 	"github.com/yarlson/turbine/internal/run"
 	"github.com/yarlson/turbine/internal/ui"
-
-	"github.com/spf13/cobra"
 )
 
 var (
@@ -96,29 +93,9 @@ func runLoad(cmd *cobra.Command) error {
 		return err
 	}
 
-	backendName := globalBackend
-	if backendName == "" {
-		backendName = cfg.Defaults.Backend
-	}
-
-	bCfg, ok := cfg.Backends[backendName]
-	if !ok {
-		return fmt.Errorf("unknown backend: %s", backendName)
-	}
-
-	// Apply CLI overrides to backend config (variant only)
-	if globalVariant != "" {
-		bCfg.Variant = globalVariant
-	}
-
-	var backend decomposer.Backend
-	switch backendName {
-	case "opencode":
-		backend = opencode.New(bCfg)
-	case "claude":
-		backend = claude.New(bCfg.Command, bCfg.Args)
-	default:
-		return fmt.Errorf("backend %s does not support decompose", backendName)
+	backend, model, err := resolveBackend(cfg, "slow")
+	if err != nil {
+		return err
 	}
 
 	// 5. Initialize Artifacts for logging
@@ -129,11 +106,11 @@ func runLoad(cmd *cobra.Command) error {
 	}
 
 	d := decomposer.New(backend, repoRoot)
-	spinner := ui.NewSpinner(fmt.Sprintf("Generating tasks from %s (%s)...", prdPath, backendName))
+	spinner := ui.NewSpinner(fmt.Sprintf("Generating tasks from %s (%s, %s)...", prdPath, backend.Name(), model))
 	cancel := spinner.Start(ctx)
 	defer cancel()
 
-	if err := d.Decompose(ctx, prdPath, artifacts.Root()); err != nil {
+	if err := d.Decompose(ctx, prdPath, artifacts.Root(), model); err != nil {
 		spinner.Fail(fmt.Sprintf("Failed: %v", err))
 		return err
 	}

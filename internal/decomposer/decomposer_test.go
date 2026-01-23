@@ -82,7 +82,7 @@ tasks:
 		}
 		d := New(backend, repoRoot)
 
-		err := d.Decompose(context.Background(), prdPath, "")
+		err := d.Decompose(context.Background(), prdPath, "", "claude-4-5-opus")
 		require.NoError(t, err)
 		assert.Equal(t, 1, backend.calls)
 
@@ -105,7 +105,7 @@ tasks:
 		}
 		d := New(backend, repoRoot)
 
-		err := d.Decompose(context.Background(), prdPath, "")
+		err := d.Decompose(context.Background(), prdPath, "", "claude-4-5-opus")
 		require.NoError(t, err)
 		assert.Equal(t, 2, backend.calls)
 
@@ -122,7 +122,7 @@ tasks:
 		}
 		d := New(backend, repoRoot)
 
-		err := d.Decompose(context.Background(), prdPath, "")
+		err := d.Decompose(context.Background(), prdPath, "", "claude-4-5-opus")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "decompose failed after 2 retries")
 		assert.Equal(t, 3, backend.calls)
@@ -138,7 +138,7 @@ tasks:
 		}
 		d := New(backend, repoRoot)
 
-		err := d.Decompose(context.Background(), prdPath, "")
+		err := d.Decompose(context.Background(), prdPath, "", "claude-4-5-opus")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "tasks file was not created")
 	})
@@ -152,7 +152,7 @@ tasks:
 		}
 		d := New(backend, repoRoot)
 
-		err := d.Decompose(context.Background(), prdPath, "")
+		err := d.Decompose(context.Background(), prdPath, "", "claude-4-5-opus")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "tasks file is empty")
 	})
@@ -161,7 +161,7 @@ tasks:
 		repoRoot, _ := setupTempDir(t)
 		backend := &mockBackend{}
 		d := New(backend, repoRoot)
-		err := d.Decompose(context.Background(), "non-existent.md", "")
+		err := d.Decompose(context.Background(), "non-existent.md", "", "claude-4-5-opus")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "read PRD")
 	})
@@ -184,14 +184,14 @@ tasks:
 		tasksPath := filepath.Join(tasksDir, "tasks.yaml")
 		require.NoError(t, os.WriteFile(tasksPath, []byte(validYAML), 0644))
 
-		d := &Decomposer{RepoRoot: tmpDir}
+		d := &Decomposer{repoRoot: tmpDir}
 		err := d.validateTasksFile(tasksPath)
 		assert.NoError(t, err)
 	})
 
 	t.Run("file does not exist", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		d := &Decomposer{RepoRoot: tmpDir}
+		d := &Decomposer{repoRoot: tmpDir}
 		err := d.validateTasksFile(filepath.Join(tmpDir, ".turbine", "tasks.yaml"))
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "tasks file was not created")
@@ -204,7 +204,7 @@ tasks:
 		tasksPath := filepath.Join(tasksDir, "tasks.yaml")
 		require.NoError(t, os.WriteFile(tasksPath, []byte(""), 0644))
 
-		d := &Decomposer{RepoRoot: tmpDir}
+		d := &Decomposer{repoRoot: tmpDir}
 		err := d.validateTasksFile(tasksPath)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "tasks file is empty")
@@ -217,7 +217,7 @@ tasks:
 		tasksPath := filepath.Join(tasksDir, "tasks.yaml")
 		require.NoError(t, os.WriteFile(tasksPath, []byte("invalid: yaml: :"), 0644))
 
-		d := &Decomposer{RepoRoot: tmpDir}
+		d := &Decomposer{repoRoot: tmpDir}
 		err := d.validateTasksFile(tasksPath)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "parse tasks")

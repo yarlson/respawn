@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/yarlson/turbine/internal/backends"
-
 	"github.com/stretchr/testify/assert"
+	"github.com/yarlson/turbine/internal/backends"
+	"github.com/yarlson/turbine/internal/config"
 )
 
 func TestParseHelpOutput(t *testing.T) {
@@ -65,7 +65,7 @@ func TestClaudeBackend_StartSession_VariantWarning(t *testing.T) {
 	assert.NoError(t, err)
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
-	b := New("claude", []string{"-p"})
+	b := New(config.Backend{Command: "claude", Args: []string{"-p"}})
 	opts := backends.SessionOptions{
 		Variant:      "some-variant",
 		ArtifactsDir: tmpDir,
@@ -84,7 +84,7 @@ func TestClaudeBackend_StartSession_VariantWarning(t *testing.T) {
 }
 
 func TestClaudeBackend_Send_SessionNotFound(t *testing.T) {
-	b := New("claude", []string{"-p"})
+	b := New(config.Backend{Command: "claude", Args: []string{"-p"}})
 	_, err := b.Send(context.Background(), "non-existent", "hello", backends.SendOptions{})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "session not found")

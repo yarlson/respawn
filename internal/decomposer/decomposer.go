@@ -11,38 +11,36 @@ import (
 	"github.com/yarlson/turbine/internal/tasks"
 )
 
-type Backend interface {
-	backends.Backend
-}
-
 type Decomposer struct {
-	Backend  Backend
-	RepoRoot string
+	backend  backends.Backend
+	repoRoot string
 }
 
 const maxValidationRetries = 2
 
 func New(backend backends.Backend, repoRoot string) *Decomposer {
 	return &Decomposer{
-		Backend:  backend,
-		RepoRoot: repoRoot,
+		backend:  backend,
+		repoRoot: repoRoot,
 	}
 }
 
 // Decompose instructs the coding agent to create .turbine/tasks.yaml from a PRD.
 // The agent writes the file directly using its tools.
-func (d *Decomposer) Decompose(ctx context.Context, prdPath string, artifactsDir string) error {
+// model specifies which LLM model to use for task decomposition.
+func (d *Decomposer) Decompose(ctx context.Context, prdPath string, artifactsDir string, model string) error {
 	prdContent, err := os.ReadFile(prdPath)
 	if err != nil {
 		return fmt.Errorf("read PRD: %w", err)
 	}
 
 	outputPath := ".turbine/tasks.yaml"
-	tasksPath := filepath.Join(d.RepoRoot, outputPath)
+	tasksPath := filepath.Join(d.repoRoot, outputPath)
 
-	sessionID, err := d.Backend.StartSession(ctx, backends.SessionOptions{
-		WorkingDir:   d.RepoRoot,
+	sessionID, err := d.backend.StartSession(ctx, backends.SessionOptions{
+		WorkingDir:   d.repoRoot,
 		ArtifactsDir: artifactsDir,
+		Model:        model,
 	})
 	if err != nil {
 		return fmt.Errorf("start session: %w", err)
@@ -54,7 +52,7 @@ func (d *Decomposer) Decompose(ctx context.Context, prdPath string, artifactsDir
 	var lastErr error
 
 	for i := 0; i <= maxValidationRetries; i++ {
-		_, err := d.Backend.Send(ctx, sessionID, userPrompt, backends.SendOptions{})
+		_, err := d.backend.Send(ctx, sessionID, userPrompt, backends.SendOptions{})
 		if err != nil {
 			return fmt.Errorf("send prompt: %w", err)
 		}
