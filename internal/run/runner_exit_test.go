@@ -2,12 +2,13 @@ package run
 
 import (
 	"context"
-	"github.com/yarlson/turbine/internal/config"
-	"github.com/yarlson/turbine/internal/state"
-	"github.com/yarlson/turbine/internal/tasks"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/yarlson/turbine/internal/config"
+	"github.com/yarlson/turbine/internal/state"
+	"github.com/yarlson/turbine/internal/tasks"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

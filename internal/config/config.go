@@ -26,11 +26,17 @@ type Retry struct {
 	Strokes   int `yaml:"strokes"`
 }
 
+// Models holds model configurations for different use cases.
+type Models struct {
+	Fast string `yaml:"fast"` // Used for implementation tasks
+	Slow string `yaml:"slow"` // Used for AGENTS.md and tasks.yaml generation
+}
+
 // Backend holds configuration for a specific agent backend.
 type Backend struct {
 	Command string   `yaml:"command"`
 	Args    []string `yaml:"args"`
-	Model   string   `yaml:"model"`
+	Models  Models   `yaml:"models"`
 	Variant string   `yaml:"variant,omitempty"`
 }
 
@@ -49,12 +55,18 @@ func DefaultConfig() *Config {
 			"opencode": {
 				Command: "opencode",
 				Args:    []string{},
-				Model:   "anthropic/claude-opus-4-5",
+				Models: Models{
+					Slow: "anthropic/claude-opus-4-5", // For AGENTS.md, tasks.yaml generation
+					Fast: "anthropic/claude-sonnet",   // For implementation
+				},
 			},
 			"claude": {
 				Command: "claude",
 				Args:    []string{"-p", "--dangerously-skip-permissions"},
-				Model:   "claude-4-5-opus-latest",
+				Models: Models{
+					Slow: "claude-4-5-opus-latest",   // For AGENTS.md, tasks.yaml generation
+					Fast: "claude-3-5-sonnet-latest", // For implementation
+				},
 			},
 		},
 	}

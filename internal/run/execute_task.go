@@ -3,12 +3,13 @@ package run
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+
 	"github.com/yarlson/turbine/internal/backends"
 	"github.com/yarlson/turbine/internal/gitx"
 	"github.com/yarlson/turbine/internal/prompt"
 	"github.com/yarlson/turbine/internal/tasks"
 	"github.com/yarlson/turbine/internal/ui"
-	"path/filepath"
 )
 
 // ExecuteTask selects and executes the next runnable task.

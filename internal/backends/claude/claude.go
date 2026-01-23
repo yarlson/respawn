@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/yarlson/turbine/internal/backends"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -12,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/yarlson/turbine/internal/backends"
 )
 
 type sessionInfo struct {

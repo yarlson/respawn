@@ -29,6 +29,8 @@ func New(backend backends.Backend, repoRoot string) *Decomposer {
 	}
 }
 
+// Decompose instructs the coding agent to create .turbine/tasks.yaml from a PRD.
+// The agent writes the file directly using its tools.
 func (d *Decomposer) Decompose(ctx context.Context, prdPath string, artifactsDir string) error {
 	prdContent, err := os.ReadFile(prdPath)
 	if err != nil {
@@ -46,53 +48,55 @@ func (d *Decomposer) Decompose(ctx context.Context, prdPath string, artifactsDir
 		return fmt.Errorf("start session: %w", err)
 	}
 
-	// Combine system prompt with user prompt for backends that don't support separate system prompts
+	// Instruct the coding agent to create the tasks file
 	userPrompt := prompt.DecomposerSystemPrompt + "\n\n" + prompt.DecomposeUserPrompt(string(prdContent), outputPath)
 
 	var lastErr error
-	var taskList *tasks.TaskList
 
 	for i := 0; i <= maxValidationRetries; i++ {
-		res, err := d.Backend.Send(ctx, sessionID, userPrompt, backends.SendOptions{})
+		_, err := d.Backend.Send(ctx, sessionID, userPrompt, backends.SendOptions{})
 		if err != nil {
 			return fmt.Errorf("send prompt: %w", err)
 		}
 
-		// First, try to extract YAML from the backend's text output
-		tasksYAML := extractYAML(res.Output)
-
-		// If no YAML in output, check if the backend wrote the file directly (e.g., OpenCode uses tools)
-		if tasksYAML == "" {
-			if fileContent, readErr := os.ReadFile(tasksPath); readErr == nil && len(fileContent) > 0 {
-				tasksYAML = string(fileContent)
-			}
+		// Validate the file the agent wrote
+		lastErr = d.validateTasksFile(tasksPath)
+		if lastErr == nil {
+			return nil
 		}
 
-		if tasksYAML == "" {
-			lastErr = fmt.Errorf("no YAML found in backend response or output file")
-		} else {
-			taskList, lastErr = validateTasksYAML(tasksYAML)
-			if lastErr == nil {
-				break
-			}
-		}
-
+		// Ask agent to fix the file
 		if i < maxValidationRetries {
-			userPrompt = prompt.DecomposeFixPrompt(string(prdContent), tasksYAML, lastErr.Error())
+			fileContent, _ := os.ReadFile(tasksPath)
+			userPrompt = prompt.DecomposeFixPrompt(string(prdContent), string(fileContent), lastErr.Error())
 		}
 	}
 
-	if lastErr != nil {
-		return fmt.Errorf("decompose failed after %d retries: %w", maxValidationRetries, lastErr)
+	return fmt.Errorf("decompose failed after %d retries: %w", maxValidationRetries, lastErr)
+}
+
+// validateTasksFile checks that the tasks file exists and is valid.
+func (d *Decomposer) validateTasksFile(tasksPath string) error {
+	content, err := os.ReadFile(tasksPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("tasks file was not created at %s", tasksPath)
+		}
+		return fmt.Errorf("read tasks file: %w", err)
 	}
 
-	// Ensure directory exists and save the validated taskList
-	if err := os.MkdirAll(filepath.Dir(tasksPath), 0755); err != nil {
-		return fmt.Errorf("create .turbine dir: %w", err)
+	if len(content) == 0 {
+		return fmt.Errorf("tasks file is empty")
 	}
 
-	if err := taskList.Save(tasksPath); err != nil {
-		return fmt.Errorf("save tasks: %w", err)
+	// Parse and validate
+	taskList, err := tasks.Load(tasksPath)
+	if err != nil {
+		return fmt.Errorf("parse tasks: %w", err)
+	}
+
+	if err := taskList.Validate(); err != nil {
+		return fmt.Errorf("validate tasks: %w", err)
 	}
 
 	return nil

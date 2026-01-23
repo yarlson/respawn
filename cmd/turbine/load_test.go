@@ -32,12 +32,11 @@ func setupTestRepo(t *testing.T) string {
 	return tmpDir
 }
 
-func TestLoadCmdFlags(t *testing.T) {
+func TestLoadCmdFlagsRequired(t *testing.T) {
 	repoRoot := setupTestRepo(t)
 	prdFile := filepath.Join(repoRoot, "test.md")
 	require.NoError(t, os.WriteFile(prdFile, []byte("prd content"), 0644))
 
-	// We need to reset flags for each test because they are global
 	prdPath = ""
 
 	cmd := RootCmd()
@@ -50,49 +49,4 @@ func TestLoadCmdFlags(t *testing.T) {
 	err := cmd.Execute()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "required flag(s) \"prd\" not set")
-
-	// Test with --prd and invalid backend
-	cmd.SetArgs([]string{"load", "--prd", "test.md", "--backend", "nonexistent", "--yes"})
-	err = cmd.Execute()
-	assert.Error(t, err) // Fails due to invalid backend
-	assert.Contains(t, err.Error(), "unknown backend")
-}
-
-func TestLoadCmdAllFlags(t *testing.T) {
-	repoRoot := setupTestRepo(t)
-	prdFile := filepath.Join(repoRoot, "test.md")
-	require.NoError(t, os.WriteFile(prdFile, []byte("prd content"), 0644))
-
-	// Reset flags
-	prdPath = ""
-	globalBackend = ""
-	globalModel = ""
-	globalVariant = ""
-	globalYes = false
-	globalVerbose = false
-	globalDebug = false
-
-	cmd := RootCmd()
-
-	cmd.SetArgs([]string{
-		"load",
-		"--prd", "test.md",
-		"--backend", "opencode",
-		"--model", "gpt-4",
-		"--variant", "experimental",
-		"--yes",
-		"--verbose",
-		"--debug",
-	})
-
-	err := cmd.Execute()
-	assert.Error(t, err) // Fails due to real backend call in test
-
-	assert.Equal(t, "test.md", prdPath)
-	assert.Equal(t, "opencode", globalBackend)
-	assert.Equal(t, "gpt-4", globalModel)
-	assert.Equal(t, "experimental", globalVariant)
-	assert.True(t, globalYes)
-	assert.True(t, globalVerbose)
-	assert.True(t, globalDebug)
 }

@@ -10,7 +10,8 @@ Turbine is a minimal Go-based harness for executing autonomous tasks from `.turb
 ## Primary Commands
 
 - **Runner**: `turbine`
-- **Decomposer**: `turbine decompose --prd <path> [--yes]`
+- **Decomposer**: `turbine load --prd <path> [--yes]`
+- **AGENTS.md Generator**: `turbine agents --prd <path> [--yes]`
 
 ## Guidelines (Progressive Disclosure)
 

@@ -82,7 +82,7 @@ func (b *OpenCode) buildCommandArgs(info *sessionInfo) ([]string, string) {
 	// Apply model/variant from session options (prioritized) or config
 	model := info.opts.Model
 	if model == "" {
-		model = b.cfg.Model
+		model = b.cfg.Models.Slow
 	}
 	if model != "" {
 		cmdArgs = append(cmdArgs, "--model", model)

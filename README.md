@@ -7,6 +7,7 @@ Turbine is a Go-based CLI that autonomously drives coding agents through a resil
 </div>
 
 - **PRD decomposition** - Breaks down PRD files into actionable tasks with dependencies
+- **AGENTS.md generation** - Creates project guidelines with progressive disclosure and appropriate development methodologies (TDD for backend, UI validation for frontend)
 - **Autonomous task execution** - Reads tasks from `.turbine/tasks.yaml` and executes them sequentially
 - **Multiple backend support** - Works with Claude and OpenCode agents
 - **Resilient execution** - Implements 3x3 rotation/stroke retry policy for reliable task completion
@@ -27,11 +28,15 @@ go build -o turbine .
 ## Quickstart
 
 1. Create a configuration file at `~/.config/turbine/turbine.yaml` (optional - defaults are provided)
-2. Load your PRD into the task manifest:
+2. Generate project guidelines from your PRD:
+   ```bash
+   turbine agents --prd path/to/your-prd.md
+   ```
+3. Load your PRD into the task manifest:
    ```bash
    turbine load --prd path/to/your-prd.md
    ```
-3. Spin up the turbine:
+4. Spin up the turbine:
    ```bash
    turbine
    ```
@@ -46,13 +51,27 @@ turbine [flags]
 
 Reads tasks from `.turbine/tasks.yaml` and executes each one using the configured backend.
 
+### Generate Project Guidelines
+
+```bash
+turbine agents --prd <path> [flags]
+```
+
+Generates `AGENTS.md` and supporting documentation in `docs/` with progressive disclosure. Automatically selects the appropriate development methodology based on project type:
+
+- **Backend/API/Library** → Test-Driven Development (TDD)
+- **Frontend/UI** → Browser/UI validation patterns
+- **CLI tools** → Output verification patterns
+
+Also creates a `CLAUDE.md` symlink pointing to `AGENTS.md` for tool compatibility.
+
 ### Load PRD into Task Manifest
 
 ```bash
 turbine load --prd <path> [flags]
 ```
 
-Takes a PRD file and breaks it down into actionable tasks in `.turbine/tasks.yaml`.
+Takes a PRD file and breaks it down into actionable tasks in `.turbine/tasks.yaml`. The agent will discover and follow any project conventions found in the repository (like TDD from `AGENTS.md`).
 
 ### Flags
 
@@ -67,7 +86,9 @@ Takes a PRD file and breaks it down into actionable tasks in `.turbine/tasks.yam
 
 ## Configuration
 
-### Config File
+See [Configuration Guide](docs/CONFIGURATION.md) for complete configuration options and examples.
+
+### Config File Location
 
 Global configuration is stored at:
 
@@ -82,6 +103,50 @@ If missing, Turbine uses default configuration with `opencode` backend and 3x3 r
 | ----------------- | -------- | --------------------------------- |
 | `XDG_CONFIG_HOME` | No       | Override default config directory |
 | `NO_COLOR`        | No       | Disable colored terminal output   |
+
+### Model Strategy (Fast vs Slow)
+
+Turbine uses different models for different operations to optimize cost and quality:
+
+**Slow Model** (e.g., Claude Opus 4.5):
+
+- Used for one-time, high-stakes operations
+- `turbine agents` - Generates AGENTS.md with methodology selection
+- `turbine load` - Decomposes PRD into structured tasks
+- Better quality for planning and architecture
+
+**Fast Model** (e.g., Claude Sonnet):
+
+- Used for repetitive implementation work
+- Task execution during `turbine run`
+- Cost-optimized for iterative development
+- Sufficient for most implementation tasks
+
+Configure in `~/.config/turbine/turbine.yaml`:
+
+```yaml
+backends:
+  claude:
+    command: claude
+    models:
+      fast: claude-3-5-sonnet-latest
+      slow: claude-4-5-opus-latest
+  opencode:
+    command: opencode
+    models:
+      fast: anthropic/claude-sonnet
+      slow: anthropic/claude-opus-4-5
+```
+
+Override at runtime:
+
+```bash
+# Use fast model explicitly
+turbine load --prd PRD.md --variant fast
+
+# Use slow model explicitly
+turbine agents --prd PRD.md --variant slow
+```
 
 ### Tasks File
 

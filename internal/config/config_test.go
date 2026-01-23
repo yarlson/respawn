@@ -74,7 +74,9 @@ backends:
   opencode:
     command: "custom-opencode"
     args: ["--debug"]
-    model: "claude-3-opus"
+    models:
+      fast: "claude-3-sonnet"
+      slow: "claude-3-opus"
     variant: "fast"
 `
 		err = os.WriteFile(filepath.Join(configDir, "turbine.yaml"), []byte(yamlData), 0644)
@@ -90,7 +92,8 @@ backends:
 
 		assert.Equal(t, "custom-opencode", cfg.Backends["opencode"].Command)
 		assert.Equal(t, []string{"--debug"}, cfg.Backends["opencode"].Args)
-		assert.Equal(t, "claude-3-opus", cfg.Backends["opencode"].Model)
+		assert.Equal(t, "claude-3-sonnet", cfg.Backends["opencode"].Models.Fast)
+		assert.Equal(t, "claude-3-opus", cfg.Backends["opencode"].Models.Slow)
 		assert.Equal(t, "fast", cfg.Backends["opencode"].Variant)
 
 		// Ensure claude backend still has defaults if not overridden

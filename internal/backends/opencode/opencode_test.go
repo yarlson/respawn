@@ -29,7 +29,10 @@ func TestBuildCommandArgs(t *testing.T) {
 			name: "with model and variant from config",
 			cfg: config.Backend{
 				Command: "opencode",
-				Model:   "m1",
+				Models: config.Models{
+					Slow: "m1",
+					Fast: "m1-fast",
+				},
 				Variant: "v1",
 			},
 			opts:     backends.SessionOptions{},
@@ -39,7 +42,10 @@ func TestBuildCommandArgs(t *testing.T) {
 			name: "override model and variant from opts",
 			cfg: config.Backend{
 				Command: "opencode",
-				Model:   "m1",
+				Models: config.Models{
+					Slow: "m1",
+					Fast: "m1-fast",
+				},
 				Variant: "v1",
 			},
 			opts: backends.SessionOptions{

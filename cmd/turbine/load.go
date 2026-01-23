@@ -106,10 +106,7 @@ func runLoad(cmd *cobra.Command) error {
 		return fmt.Errorf("unknown backend: %s", backendName)
 	}
 
-	// Apply CLI overrides to backend config
-	if globalModel != "" {
-		bCfg.Model = globalModel
-	}
+	// Apply CLI overrides to backend config (variant only)
 	if globalVariant != "" {
 		bCfg.Variant = globalVariant
 	}

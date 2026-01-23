@@ -2,7 +2,6 @@ package decomposer
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,29 +12,50 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// mockBackend simulates a coding agent that writes files directly.
 type mockBackend struct {
-	outputs []string
-	err     error
-	calls   int
+	// writeFile is called on each Send to simulate the backend writing a file
+	writeFile func(repoRoot string, call int) error
+	repoRoot  string
+	calls     int
+	sendErr   error
 }
 
 func (m *mockBackend) StartSession(ctx context.Context, opts backends.SessionOptions) (string, error) {
+	m.repoRoot = opts.WorkingDir
 	return "mock-session", nil
 }
 
 func (m *mockBackend) Send(ctx context.Context, sessionID string, prompt string, opts backends.SendOptions) (*backends.Result, error) {
-	if m.err != nil {
-		return nil, m.err
+	if m.sendErr != nil {
+		return nil, m.sendErr
 	}
-	if m.calls >= len(m.outputs) {
-		return nil, fmt.Errorf("too many calls to mockBackend")
+	if m.writeFile != nil {
+		if err := m.writeFile(m.repoRoot, m.calls); err != nil {
+			return nil, err
+		}
 	}
-	out := m.outputs[m.calls]
 	m.calls++
-	return &backends.Result{Output: out}, nil
+	return &backends.Result{Output: ""}, nil
 }
 
 func TestDecompose(t *testing.T) {
+	validYAML := `version: 1
+tasks:
+  - id: T-001
+    title: Task 1
+    status: todo
+    description: desc
+    commit_message: 'feat: t1'
+`
+
+	invalidYAML := `version: 1
+tasks:
+  - id: T-001
+    title: Task 1
+    # missing status, description, commit_message
+`
+
 	// Helper to set up a fresh temp directory with PRD file
 	setupTempDir := func(t *testing.T) (string, string) {
 		tmpDir := t.TempDir()
@@ -44,14 +64,27 @@ func TestDecompose(t *testing.T) {
 		return tmpDir, prdPath
 	}
 
-	t.Run("successful decomposition", func(t *testing.T) {
+	// Helper to write tasks file
+	writeTasksFile := func(repoRoot, content string) error {
+		tasksDir := filepath.Join(repoRoot, ".turbine")
+		if err := os.MkdirAll(tasksDir, 0755); err != nil {
+			return err
+		}
+		return os.WriteFile(filepath.Join(tasksDir, "tasks.yaml"), []byte(content), 0644)
+	}
+
+	t.Run("successful decomposition - backend writes valid file", func(t *testing.T) {
 		repoRoot, prdPath := setupTempDir(t)
-		output := "```yaml\nversion: 1\ntasks:\n  - id: T-001\n    title: Task 1\n    status: todo\n    description: desc\n    commit_message: 'feat: t1'\n```"
-		backend := &mockBackend{outputs: []string{output}}
+		backend := &mockBackend{
+			writeFile: func(root string, call int) error {
+				return writeTasksFile(root, validYAML)
+			},
+		}
 		d := New(backend, repoRoot)
 
 		err := d.Decompose(context.Background(), prdPath, "")
 		require.NoError(t, err)
+		assert.Equal(t, 1, backend.calls)
 
 		tasksPath := filepath.Join(repoRoot, ".turbine", "tasks.yaml")
 		assert.FileExists(t, tasksPath)
@@ -60,11 +93,16 @@ func TestDecompose(t *testing.T) {
 		assert.Contains(t, string(content), "id: T-001")
 	})
 
-	t.Run("successful retry", func(t *testing.T) {
+	t.Run("successful retry - backend fixes file on second attempt", func(t *testing.T) {
 		repoRoot, prdPath := setupTempDir(t)
-		invalidOutput := "```yaml\ninvalid: yaml: :\n```"
-		validOutput := "```yaml\nversion: 1\ntasks:\n  - id: T-001\n    title: Task 1\n    status: todo\n    description: desc\n    commit_message: 'feat: t1'\n```"
-		backend := &mockBackend{outputs: []string{invalidOutput, validOutput}}
+		backend := &mockBackend{
+			writeFile: func(root string, call int) error {
+				if call == 0 {
+					return writeTasksFile(root, invalidYAML)
+				}
+				return writeTasksFile(root, validYAML)
+			},
+		}
 		d := New(backend, repoRoot)
 
 		err := d.Decompose(context.Background(), prdPath, "")
@@ -75,16 +113,48 @@ func TestDecompose(t *testing.T) {
 		assert.FileExists(t, tasksPath)
 	})
 
-	t.Run("fail after max retries", func(t *testing.T) {
+	t.Run("fail after max retries - backend keeps writing invalid file", func(t *testing.T) {
 		repoRoot, prdPath := setupTempDir(t)
-		invalidOutput := "```yaml\ninvalid: yaml: :\n```"
-		backend := &mockBackend{outputs: []string{invalidOutput, invalidOutput, invalidOutput}}
+		backend := &mockBackend{
+			writeFile: func(root string, call int) error {
+				return writeTasksFile(root, invalidYAML)
+			},
+		}
 		d := New(backend, repoRoot)
 
 		err := d.Decompose(context.Background(), prdPath, "")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "decompose failed after 2 retries")
 		assert.Equal(t, 3, backend.calls)
+	})
+
+	t.Run("fail - backend never creates file", func(t *testing.T) {
+		repoRoot, prdPath := setupTempDir(t)
+		backend := &mockBackend{
+			writeFile: func(root string, call int) error {
+				// Backend doesn't write the file
+				return nil
+			},
+		}
+		d := New(backend, repoRoot)
+
+		err := d.Decompose(context.Background(), prdPath, "")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "tasks file was not created")
+	})
+
+	t.Run("fail - backend writes empty file", func(t *testing.T) {
+		repoRoot, prdPath := setupTempDir(t)
+		backend := &mockBackend{
+			writeFile: func(root string, call int) error {
+				return writeTasksFile(root, "")
+			},
+		}
+		d := New(backend, repoRoot)
+
+		err := d.Decompose(context.Background(), prdPath, "")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "tasks file is empty")
 	})
 
 	t.Run("missing PRD file", func(t *testing.T) {
@@ -95,35 +165,61 @@ func TestDecompose(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "read PRD")
 	})
+}
 
-	t.Run("no YAML in response", func(t *testing.T) {
-		repoRoot, prdPath := setupTempDir(t)
-		backend := &mockBackend{outputs: []string{"no yaml here", "no yaml here", "no yaml here"}}
-		d := New(backend, repoRoot)
-		err := d.Decompose(context.Background(), prdPath, "")
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "no YAML found")
+func TestValidateTasksFile(t *testing.T) {
+	validYAML := `version: 1
+tasks:
+  - id: T-001
+    title: Task 1
+    status: todo
+    description: desc
+    commit_message: 'feat: t1'
+`
+
+	t.Run("valid file", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		tasksDir := filepath.Join(tmpDir, ".turbine")
+		require.NoError(t, os.MkdirAll(tasksDir, 0755))
+		tasksPath := filepath.Join(tasksDir, "tasks.yaml")
+		require.NoError(t, os.WriteFile(tasksPath, []byte(validYAML), 0644))
+
+		d := &Decomposer{RepoRoot: tmpDir}
+		err := d.validateTasksFile(tasksPath)
+		assert.NoError(t, err)
 	})
 
-	t.Run("backend writes file directly", func(t *testing.T) {
-		repoRoot, prdPath := setupTempDir(t)
-		// Backend returns no text output, but writes the file directly
-		backend := &mockBackend{outputs: []string{""}}
+	t.Run("file does not exist", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		d := &Decomposer{RepoRoot: tmpDir}
+		err := d.validateTasksFile(filepath.Join(tmpDir, ".turbine", "tasks.yaml"))
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "tasks file was not created")
+	})
 
-		// Pre-create the tasks.yaml file as if the backend wrote it
-		tasksDir := filepath.Join(repoRoot, ".turbine")
+	t.Run("empty file", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		tasksDir := filepath.Join(tmpDir, ".turbine")
 		require.NoError(t, os.MkdirAll(tasksDir, 0755))
-		validYAML := "version: 1\ntasks:\n  - id: T-001\n    title: Task 1\n    status: todo\n    description: desc\n    commit_message: 'feat: t1'\n"
-		require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "tasks.yaml"), []byte(validYAML), 0644))
+		tasksPath := filepath.Join(tasksDir, "tasks.yaml")
+		require.NoError(t, os.WriteFile(tasksPath, []byte(""), 0644))
 
-		d := New(backend, repoRoot)
-		err := d.Decompose(context.Background(), prdPath, "")
-		require.NoError(t, err)
+		d := &Decomposer{RepoRoot: tmpDir}
+		err := d.validateTasksFile(tasksPath)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "tasks file is empty")
+	})
 
-		tasksPath := filepath.Join(repoRoot, ".turbine", "tasks.yaml")
-		assert.FileExists(t, tasksPath)
-		content, err := os.ReadFile(tasksPath)
-		require.NoError(t, err)
-		assert.Contains(t, string(content), "id: T-001")
+	t.Run("invalid YAML", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		tasksDir := filepath.Join(tmpDir, ".turbine")
+		require.NoError(t, os.MkdirAll(tasksDir, 0755))
+		tasksPath := filepath.Join(tasksDir, "tasks.yaml")
+		require.NoError(t, os.WriteFile(tasksPath, []byte("invalid: yaml: :"), 0644))
+
+		d := &Decomposer{RepoRoot: tmpDir}
+		err := d.validateTasksFile(tasksPath)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "parse tasks")
 	})
 }

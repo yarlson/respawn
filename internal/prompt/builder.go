@@ -9,7 +9,16 @@ import (
 
 // DecomposeUserPrompt builds the user prompt for the decomposition task.
 func DecomposeUserPrompt(prdContent, outputPath string) string {
-	return fmt.Sprintf("## PRD Content:\n\n%s\n\n## Output Path:\n%s", prdContent, outputPath)
+	return fmt.Sprintf(`## PRD Content:
+
+%s
+
+## Instructions
+
+Write the tasks file to: %s
+
+Use your file writing tools to create the file. Do NOT output YAML as text.
+Create the .turbine directory first if it doesn't exist: mkdir -p .turbine`, prdContent, outputPath)
 }
 
 // DecomposeFixPrompt builds the user prompt for fixing invalid decomposition YAML.
@@ -17,13 +26,13 @@ func DecomposeFixPrompt(prdContent, failedYAML, validationError string) string {
 	var b strings.Builder
 
 	b.WriteString("## Task: Fix Invalid .turbine/tasks.yaml\n\n")
-	b.WriteString("The generated YAML is invalid. Please fix it based on the PRD and validation errors.\n\n")
+	b.WriteString("The generated YAML file is invalid. Fix the file directly using your file writing tools.\n\n")
 
 	b.WriteString("### PRD Content\n")
 	b.WriteString(prdContent)
 	b.WriteString("\n\n")
 
-	b.WriteString("### Failed YAML\n")
+	b.WriteString("### Current File Content (Invalid)\n")
 	b.WriteString("```yaml\n")
 	b.WriteString(failedYAML)
 	b.WriteString("\n```\n\n")
@@ -33,7 +42,8 @@ func DecomposeFixPrompt(prdContent, failedYAML, validationError string) string {
 	b.WriteString(validationError)
 	b.WriteString("\n```\n\n")
 
-	b.WriteString("Return ONLY the corrected YAML. No prose, no markdown fences.")
+	b.WriteString("Fix the errors and overwrite .turbine/tasks.yaml with the corrected content.\n")
+	b.WriteString("Use your file writing tools. Do NOT output YAML as text.")
 
 	return b.String()
 }

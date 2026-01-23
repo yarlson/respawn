@@ -3,7 +3,7 @@ package config
 // Overrides represents CLI overrides.
 type Overrides struct {
 	Backend string
-	Model   string
+	Model   string // Override model selection (fast/slow)
 	Variant string
 	Yes     bool
 	Verbose bool
@@ -13,16 +13,18 @@ type Overrides struct {
 // EffectiveConfig represents the final configuration after merging defaults,
 // config file, and CLI overrides.
 type EffectiveConfig struct {
-	Backend string
-	Command string
-	Args    []string
-	Model   string
-	Variant string
-	Quiet   bool
-	Yes     bool
-	Verbose bool
-	Debug   bool
-	Retry   Retry
+	Backend   string
+	Command   string
+	Args      []string
+	ModelSlow string // Model for AGENTS.md and tasks.yaml generation
+	ModelFast string // Model for implementation
+	Model     string // Currently selected model (slow by default, or overridden)
+	Variant   string
+	Quiet     bool
+	Yes       bool
+	Verbose   bool
+	Debug     bool
+	Retry     Retry
 }
 
 // Merge computes the effective settings from the base config and CLI overrides.
@@ -47,13 +49,24 @@ func Merge(cfg *Config, overrides Overrides) *EffectiveConfig {
 	if b, ok := cfg.Backends[eff.Backend]; ok {
 		eff.Command = b.Command
 		eff.Args = b.Args
-		eff.Model = b.Model
+		eff.ModelSlow = b.Models.Slow
+		eff.ModelFast = b.Models.Fast
+		eff.Model = b.Models.Slow // Default to slow model
 		eff.Variant = b.Variant
 	}
 
 	// 3. Apply CLI Overrides
 	if overrides.Model != "" {
-		eff.Model = overrides.Model
+		// Override can be "fast" or "slow" to switch between models, or a custom model name
+		switch overrides.Model {
+		case "fast":
+			eff.Model = eff.ModelFast
+		case "slow":
+			eff.Model = eff.ModelSlow
+		default:
+			// Custom model name
+			eff.Model = overrides.Model
+		}
 	}
 	if overrides.Variant != "" {
 		eff.Variant = overrides.Variant

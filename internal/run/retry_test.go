@@ -3,13 +3,14 @@ package run
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"testing"
+
 	"github.com/yarlson/turbine/internal/config"
 	"github.com/yarlson/turbine/internal/gitx"
 	"github.com/yarlson/turbine/internal/state"
 	"github.com/yarlson/turbine/internal/tasks"
-	"os"
-	"path/filepath"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
