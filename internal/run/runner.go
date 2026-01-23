@@ -73,7 +73,7 @@ func NewRunner(ctx context.Context, cfg Config) (*Runner, error) {
 			return nil, fmt.Errorf("check repository status: %w", err)
 		}
 		if dirty {
-			return nil, fmt.Errorf("uncommitted changes detected. Commit or stash before starting.")
+			return nil, fmt.Errorf("uncommitted changes detected; commit or stash before starting")
 		}
 	}
 
