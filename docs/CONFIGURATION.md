@@ -112,7 +112,7 @@ turbine agents --prd PRD.md --model claude-opus-4-5
 turbine load --prd PRD.md --variant fast
 
 # Combine multiple overrides
-turbine --backend claude --model claude-3-5-sonnet --verbose
+turbine --backend claude --model claude-3-5-sonnet
 ```
 
 ## Environment Variables

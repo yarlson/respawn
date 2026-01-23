@@ -42,8 +42,6 @@ func TestAgentsCmdFlagsCapture(t *testing.T) {
 	globalModel = ""
 	globalVariant = ""
 	globalYes = false
-	globalVerbose = false
-	globalDebug = false
 
 	cmd := RootCmd()
 	cmd.SetArgs([]string{
@@ -52,8 +50,6 @@ func TestAgentsCmdFlagsCapture(t *testing.T) {
 		"--backend", "opencode",
 		"--variant", "experimental",
 		"--yes",
-		"--verbose",
-		"--debug",
 	})
 
 	// We expect an error since test.md doesn't exist, but flags should be parsed
@@ -63,6 +59,4 @@ func TestAgentsCmdFlagsCapture(t *testing.T) {
 	assert.Equal(t, "opencode", globalBackend)
 	assert.Equal(t, "experimental", globalVariant)
 	assert.True(t, globalYes)
-	assert.True(t, globalVerbose)
-	assert.True(t, globalDebug)
 }

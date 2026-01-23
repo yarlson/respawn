@@ -87,8 +87,6 @@ Takes a PRD file and breaks it down into actionable tasks in `.turbine/tasks.yam
 | `--model`   | Model name for the backend          |
 | `--variant` | Variant configuration               |
 | `--yes`     | Skip confirmation prompts           |
-| `--verbose` | Show detailed output                |
-| `--debug`   | Show debug logs                     |
 
 ## Configuration
 

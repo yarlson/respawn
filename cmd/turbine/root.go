@@ -15,8 +15,6 @@ var (
 	globalModel   string
 	globalVariant string
 	globalYes     bool
-	globalVerbose bool
-	globalDebug   bool
 )
 
 var rootCmd = &cobra.Command{
@@ -34,8 +32,6 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&globalModel, "model", "", "Model name for the backend")
 	rootCmd.PersistentFlags().StringVar(&globalVariant, "variant", "", "Variant configuration")
 	rootCmd.PersistentFlags().BoolVar(&globalYes, "yes", false, "Skip confirmation prompts")
-	rootCmd.PersistentFlags().BoolVar(&globalVerbose, "verbose", false, "Show detailed output")
-	rootCmd.PersistentFlags().BoolVar(&globalDebug, "debug", false, "Show debug logs")
 }
 
 type namedBackend struct {

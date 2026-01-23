@@ -15,5 +15,5 @@
 
 ## CLI UX
 - Output must be scannable: task transitions, gate summaries, artifact pointers.
-- Avoid chatty logs; `--verbose` streams backend output.
+- Avoid chatty logs.
 - All interactive prompts must be skippable with `--yes`.
