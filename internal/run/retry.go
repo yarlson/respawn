@@ -6,6 +6,7 @@ import (
 	"github.com/yarlson/respawn/internal/gitx"
 	"github.com/yarlson/respawn/internal/state"
 	"github.com/yarlson/respawn/internal/tasks"
+	"github.com/yarlson/respawn/internal/ui"
 )
 
 // RetryPolicy manages the lifecycle of a task execution with retries and resets.
@@ -35,7 +36,7 @@ func (p *RetryPolicy) Execute(ctx context.Context, r *Runner, task *tasks.Task, 
 
 	for r.State.Cycle <= p.MaxCycles {
 		for r.State.Attempt <= p.MaxAttempts {
-			fmt.Printf("Attempt %d/%d (cycle %d)\n", r.State.Attempt, p.MaxAttempts, r.State.Cycle)
+			fmt.Printf("  %s Attempt %d/%d (cycle %d)\n", ui.InProgressMarker(), r.State.Attempt, p.MaxAttempts, r.State.Cycle)
 
 			err := execute(ctx, r.State.BackendSessionID)
 			if err == nil {
@@ -43,7 +44,7 @@ func (p *RetryPolicy) Execute(ctx context.Context, r *Runner, task *tasks.Task, 
 				return nil
 			}
 
-			fmt.Printf("Attempt failed: %v\n", err)
+			fmt.Printf("  %s %v\n", ui.FailureMarker(), ui.Dim(fmt.Sprintf("Attempt failed: %v", err)))
 
 			if r.State.Attempt < p.MaxAttempts {
 				r.State.Attempt++
@@ -58,7 +59,7 @@ func (p *RetryPolicy) Execute(ctx context.Context, r *Runner, task *tasks.Task, 
 		// Cycle exhausted, increment cycle and reset
 		if r.State.Cycle < p.MaxCycles {
 			r.State.Cycle++
-			fmt.Printf("Cycle %d exhausted. Resetting to %s\n", r.State.Cycle-1, r.State.LastSavepointCommit)
+			fmt.Printf("  %s Cycle %d exhausted. Resetting to %s\n", ui.Yellow("⟳"), r.State.Cycle-1, ui.Dim(r.State.LastSavepointCommit[:8]))
 			if err := gitx.ResetHard(ctx, r.RepoRoot, r.State.LastSavepointCommit); err != nil {
 				return fmt.Errorf("reset to savepoint: %w", err)
 			}

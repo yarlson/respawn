@@ -13,6 +13,7 @@ import (
 	"github.com/yarlson/respawn/internal/decomposer"
 	"github.com/yarlson/respawn/internal/gitx"
 	"github.com/yarlson/respawn/internal/run"
+	"github.com/yarlson/respawn/internal/ui"
 
 	"github.com/spf13/cobra"
 )
@@ -53,8 +54,11 @@ func runDecompose(cmd *cobra.Command) error {
 				return err
 			}
 		} else {
-			fmt.Printf("These paths need to be in .gitignore: %v\n", missingIgnores)
-			fmt.Print("Add them? [y/N]: ")
+			fmt.Printf("%s\n", ui.Section("⚠", "These paths need to be in .gitignore"))
+			for _, path := range missingIgnores {
+				fmt.Printf("  %s\n", ui.Dim(path))
+			}
+			fmt.Print(ui.Yellow("Add them? [y/N]: "))
 			var resp string
 			_, _ = fmt.Scanln(&resp)
 			if strings.ToLower(resp) == "y" {
@@ -76,7 +80,7 @@ func runDecompose(cmd *cobra.Command) error {
 	tasksPath := filepath.Join(repoRoot, ".respawn", "tasks.yaml")
 	if _, err := os.Stat(tasksPath); err == nil {
 		if !globalYes {
-			fmt.Printf("%s exists. Overwrite? [y/N]: ", tasksPath)
+			fmt.Printf("%s exists. %s [y/N]: ", ui.Dim(tasksPath), ui.Yellow("Overwrite?"))
 			scanner := bufio.NewScanner(os.Stdin)
 			scanner.Scan()
 			resp := scanner.Text()
@@ -128,12 +132,13 @@ func runDecompose(cmd *cobra.Command) error {
 	}
 
 	d := decomposer.New(backend, repoRoot)
-	fmt.Printf("Generating tasks from %s (%s)...\n", prdPath, backendName)
+	spinner := ui.NewSpinner()
+	fmt.Printf("%s\n", spinner.Message(fmt.Sprintf("Generating tasks from %s (%s)...", ui.Dim(prdPath), ui.Dim(backendName))))
 	if err := d.Decompose(ctx, prdPath, artifacts.Root()); err != nil {
 		return err
 	}
 
-	fmt.Printf("Created %s (run %s)\n", tasksPath, runID)
+	fmt.Printf("%s %s %s\n", ui.SuccessMarker(), ui.Bold("Created"), ui.Dim(fmt.Sprintf("%s (run %s)", tasksPath, runID)))
 	return nil
 }
 

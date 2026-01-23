@@ -11,6 +11,7 @@ import (
 	"github.com/yarlson/respawn/internal/gitx"
 	"github.com/yarlson/respawn/internal/state"
 	"github.com/yarlson/respawn/internal/tasks"
+	"github.com/yarlson/respawn/internal/ui"
 )
 
 type Runner struct {
@@ -89,11 +90,11 @@ func NewRunner(ctx context.Context, cfg Config) (*Runner, error) {
 				return nil, fmt.Errorf("update .gitignore: %w", err)
 			}
 		} else {
-			fmt.Printf("Not in .gitignore:\n")
+			fmt.Printf("%s\n", ui.Section("⚠", "Not in .gitignore"))
 			for _, m := range missing {
-				fmt.Printf("  %s\n", m)
+				fmt.Printf("  %s\n", ui.Dim(m))
 			}
-			fmt.Printf("Use --yes to add automatically.\n")
+			fmt.Printf("%s\n", ui.Dim("Use --yes to add automatically."))
 		}
 	}
 
@@ -141,8 +142,8 @@ func (r *Runner) PrintSummary() {
 		}
 	}
 
-	fmt.Printf("%d tasks: %d done, %d ready, %d blocked, %d failed\n",
-		total, done, runnable, blocked, failed)
+	fmt.Printf("\n%s\n", ui.Divider(40))
+	fmt.Printf("%s\n", ui.SummaryStats(total, done, runnable, blocked, failed))
 }
 
 func (r *Runner) Run(ctx context.Context, backend backends.Backend) error {

@@ -7,6 +7,7 @@ import (
 	"github.com/yarlson/respawn/internal/gitx"
 	"github.com/yarlson/respawn/internal/prompt"
 	"github.com/yarlson/respawn/internal/tasks"
+	"github.com/yarlson/respawn/internal/ui"
 	"path/filepath"
 )
 
@@ -21,7 +22,7 @@ func (r *Runner) ExecuteTask(ctx context.Context, backend backends.Backend) erro
 
 // ExecuteTaskWithTask executes a specific task.
 func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend backends.Backend, task *tasks.Task) error {
-	fmt.Printf("Starting: %s [%s]\n", task.Title, task.ID)
+	fmt.Printf("%s %s\n", ui.Section("›", ui.Bold(task.Title)), ui.Dim(fmt.Sprintf("[%s]", task.ID)))
 
 	policy := &RetryPolicy{
 		MaxAttempts: r.Config.Retry.Attempts,
@@ -46,7 +47,7 @@ func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend backends.Backe
 				return fmt.Errorf("start session: %w", err)
 			}
 			r.State.BackendSessionID = sessionID
-			fmt.Printf("Session: %s\n", sessionID)
+			fmt.Printf("  %s %s\n", ui.Dim("Session:"), ui.Dim(sessionID))
 		}
 
 		// Prompt building
@@ -59,13 +60,13 @@ func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend backends.Backe
 		}
 
 		// Run verify commands
-		fmt.Printf("Verifying...\n")
+		fmt.Printf("  %s\n", ui.InProgressMarker()+" Verifying...")
 		_, verifyErr := RunVerification(ctx, arts, task.Verify)
 		if verifyErr != nil {
-			fmt.Printf("Verification failed\n")
+			fmt.Printf("  %s\n", ui.FailureMarker()+" Verification failed")
 			return fmt.Errorf("verification failed: %w", verifyErr)
 		}
-		fmt.Printf("Verification passed\n")
+		fmt.Printf("  %s\n", ui.SuccessMarker()+" Verification passed")
 		return nil
 	})
 
@@ -74,7 +75,7 @@ func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend backends.Backe
 		task.Status = tasks.StatusDone
 	} else {
 		// policy.Execute already sets task.Status = tasks.StatusFailed on exhaustion
-		fmt.Printf("Failed: %s [%s] — %v\n", task.Title, task.ID, err)
+		fmt.Printf("%s %s\n  %s\n", ui.FailureMarker(), ui.Bold(task.Title), ui.Red(fmt.Sprintf("Failed after max attempts: %v", err)))
 	}
 
 	tasksPath := filepath.Join(r.RepoRoot, ".respawn", "tasks.yaml")
@@ -89,7 +90,7 @@ func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend backends.Backe
 		if commitErr != nil {
 			return fmt.Errorf("commit changes: %w", commitErr)
 		}
-		fmt.Printf("Committed: %s\n", hash)
+		fmt.Printf("  %s %s\n", ui.SuccessMarker(), ui.Dim(hash))
 
 		// Update last save point for next task
 		r.State.LastSavepointCommit = hash
