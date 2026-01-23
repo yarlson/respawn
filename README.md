@@ -2,6 +2,10 @@
 
 Turbine is a Go-based CLI that autonomously drives coding agents through a resilient "Decompose → Execute → Verify → Commit" loop to implement a PRD end-to-end without human interaction.
 
+<div align="center">
+  <img src="assets/turbine.jpeg" alt="Turbine" width="100%" />
+</div>
+
 - **PRD decomposition** - Breaks down PRD files into actionable tasks with dependencies
 - **Autonomous task execution** - Reads tasks from `.turbine/tasks.yaml` and executes them sequentially
 - **Multiple backend support** - Works with Claude and OpenCode agents
