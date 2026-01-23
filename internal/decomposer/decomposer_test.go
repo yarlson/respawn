@@ -73,18 +73,29 @@ tasks:
 		return os.WriteFile(filepath.Join(tasksDir, "tasks.yaml"), []byte(content), 0644)
 	}
 
+	// Note: With two-phase decomposition, call 0 is exploration, call 1+ is task generation
+	opts := DecomposeOptions{
+		FastModel: "fast-model",
+		SlowModel: "slow-model",
+	}
+
 	t.Run("successful decomposition - backend writes valid file", func(t *testing.T) {
 		repoRoot, prdPath := setupTempDir(t)
 		backend := &mockBackend{
 			writeFile: func(root string, call int) error {
-				return writeTasksFile(root, validYAML)
+				// call 0 = exploration (no file written)
+				// call 1 = task generation
+				if call == 1 {
+					return writeTasksFile(root, validYAML)
+				}
+				return nil
 			},
 		}
 		d := New(backend, repoRoot)
 
-		err := d.Decompose(context.Background(), prdPath, "", "claude-4-5-opus")
+		err := d.Decompose(context.Background(), prdPath, opts)
 		require.NoError(t, err)
-		assert.Equal(t, 1, backend.calls)
+		assert.Equal(t, 2, backend.calls) // 1 explore + 1 generate
 
 		tasksPath := filepath.Join(repoRoot, ".turbine", "tasks.yaml")
 		assert.FileExists(t, tasksPath)
@@ -97,17 +108,23 @@ tasks:
 		repoRoot, prdPath := setupTempDir(t)
 		backend := &mockBackend{
 			writeFile: func(root string, call int) error {
-				if call == 0 {
+				// call 0 = exploration
+				// call 1 = first generation attempt (invalid)
+				// call 2 = retry (valid)
+				if call == 1 {
 					return writeTasksFile(root, invalidYAML)
 				}
-				return writeTasksFile(root, validYAML)
+				if call >= 2 {
+					return writeTasksFile(root, validYAML)
+				}
+				return nil
 			},
 		}
 		d := New(backend, repoRoot)
 
-		err := d.Decompose(context.Background(), prdPath, "", "claude-4-5-opus")
+		err := d.Decompose(context.Background(), prdPath, opts)
 		require.NoError(t, err)
-		assert.Equal(t, 2, backend.calls)
+		assert.Equal(t, 3, backend.calls) // 1 explore + 2 generate attempts
 
 		tasksPath := filepath.Join(repoRoot, ".turbine", "tasks.yaml")
 		assert.FileExists(t, tasksPath)
@@ -117,15 +134,18 @@ tasks:
 		repoRoot, prdPath := setupTempDir(t)
 		backend := &mockBackend{
 			writeFile: func(root string, call int) error {
-				return writeTasksFile(root, invalidYAML)
+				if call >= 1 { // all generation attempts write invalid
+					return writeTasksFile(root, invalidYAML)
+				}
+				return nil
 			},
 		}
 		d := New(backend, repoRoot)
 
-		err := d.Decompose(context.Background(), prdPath, "", "claude-4-5-opus")
+		err := d.Decompose(context.Background(), prdPath, opts)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "decompose failed after 2 retries")
-		assert.Equal(t, 3, backend.calls)
+		assert.Equal(t, 4, backend.calls) // 1 explore + 3 generate attempts
 	})
 
 	t.Run("fail - backend never creates file", func(t *testing.T) {
@@ -138,7 +158,7 @@ tasks:
 		}
 		d := New(backend, repoRoot)
 
-		err := d.Decompose(context.Background(), prdPath, "", "claude-4-5-opus")
+		err := d.Decompose(context.Background(), prdPath, opts)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "tasks file was not created")
 	})
@@ -147,12 +167,15 @@ tasks:
 		repoRoot, prdPath := setupTempDir(t)
 		backend := &mockBackend{
 			writeFile: func(root string, call int) error {
-				return writeTasksFile(root, "")
+				if call >= 1 {
+					return writeTasksFile(root, "")
+				}
+				return nil
 			},
 		}
 		d := New(backend, repoRoot)
 
-		err := d.Decompose(context.Background(), prdPath, "", "claude-4-5-opus")
+		err := d.Decompose(context.Background(), prdPath, opts)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "tasks file is empty")
 	})
@@ -161,7 +184,7 @@ tasks:
 		repoRoot, _ := setupTempDir(t)
 		backend := &mockBackend{}
 		d := New(backend, repoRoot)
-		err := d.Decompose(context.Background(), "non-existent.md", "", "claude-4-5-opus")
+		err := d.Decompose(context.Background(), "non-existent.md", opts)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "read PRD")
 	})

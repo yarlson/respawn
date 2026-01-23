@@ -74,9 +74,13 @@ func (b *Backend) Send(ctx context.Context, sessionID string, prompt string, opt
 
 	cmdArgs := append([]string{}, b.cfg.Args...)
 
-	// Apply model from session options
-	if info.opts.Model != "" {
-		cmdArgs = append(cmdArgs, "--model", info.opts.Model)
+	// Model priority: SendOptions override > SessionOptions
+	model := opts.Model
+	if model == "" {
+		model = info.opts.Model
+	}
+	if model != "" {
+		cmdArgs = append(cmdArgs, "--model", model)
 	}
 
 	useContinue := false

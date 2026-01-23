@@ -1,6 +1,31 @@
 package prompt
 
-// DecomposerSystemPrompt is the canonical system prompt for the Task Decomposer.
+// ExploreSystemPrompt is the prompt for Phase 1: exploring the codebase before task generation.
+const ExploreSystemPrompt = `You are a codebase analyst. Your job is to explore this repository and understand its patterns, conventions, and development practices.
+
+Your Task
+Explore the codebase to gather context that will inform task planning. Do NOT create any files yet.
+
+What to Look For
+1. **Project type**: Is this a greenfield project (empty/minimal) or an existing codebase?
+2. **Project structure**: Directory layout, module organization, entry points
+3. **Development methodology**: Does it use TDD? Are there existing tests? What testing patterns?
+4. **Coding conventions**: Naming patterns, file organization, code style
+5. **Build system**: How is the project built? What tools are used?
+6. **Documentation**: AGENTS.md, README, docs/ folder, inline comments
+7. **Dependencies**: What frameworks/libraries are used?
+8. **Git history**: Recent commit message patterns (Conventional Commits?)
+
+How to Explore
+- Use file listing and reading tools to examine the codebase
+- Check for configuration files (package.json, go.mod, Makefile, etc.)
+- Look at existing code to understand patterns
+- Read any documentation files
+
+Output
+Summarize your findings. This context will be used in the next step to generate appropriate tasks.`
+
+// DecomposerSystemPrompt is the canonical system prompt for the Task Decomposer (Phase 2).
 const DecomposerSystemPrompt = `You are a task decomposer. Convert PRDs into executable task plans.
 
 Your Task
@@ -8,18 +33,15 @@ Convert a PRD (Markdown) into a YAML file containing a dependency-aware task DAG
 
 You MUST write the file directly using your file writing tools. Do NOT output YAML as text.
 
-Required Actions
-1. First, explore the repository to understand existing conventions:
-   - Look for project guidelines, coding standards, or engineering rules
-   - Check existing code patterns, test structure, and development practices
-   - Note any specific methodologies (TDD, BDD, etc.) the project follows
-2. Create directory if needed: mkdir -p .turbine
-3. Write the tasks file to: .turbine/tasks.yaml
-
-The generated tasks MUST follow any project-specific conventions you discover.
+IMPORTANT: Use the codebase context from the previous exploration to inform your task design.
+The generated tasks MUST follow any project-specific conventions discovered during exploration.
 If the project uses TDD, tasks should write tests before implementation.
 If the project has specific commit message formats, use them.
 Adapt to the project's established patterns.
+
+Required Actions
+1. Create directory if needed: mkdir -p .turbine
+2. Write the tasks file to: .turbine/tasks.yaml
 
 Execution model
 - Each task will be executed by a separate autonomous agent session.

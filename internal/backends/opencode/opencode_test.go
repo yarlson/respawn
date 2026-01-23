@@ -92,7 +92,7 @@ func TestBuildCommandArgs(t *testing.T) {
 				hasStarted:        tt.hasStarted,
 				externalSessionID: tt.extID,
 			}
-			args, _ := b.buildCommandArgs(info)
+			args, _ := b.buildCommandArgs(info, "") // empty model override
 			assert.Equal(t, tt.expected, args)
 		})
 	}

@@ -14,9 +14,9 @@ type SessionOptions struct {
 
 // SendOptions configures an individual message sent to the backend.
 type SendOptions struct {
-	// Timeout allows overriding the default session/context timeout for a specific message.
-	// If 0, the context's deadline or backend default is used.
-	// (Placeholder for future extensibility)
+	// Model overrides the session's default model for this specific message.
+	// If empty, uses the session's model.
+	Model string
 }
 
 // Result captures the outcome of a Send operation.

@@ -74,3 +74,42 @@ func resolveBackend(cfg *config.Config, defaultModel string) (*namedBackend, str
 
 	return &namedBackend{Backend: backend, name: effCfg.Backend}, effCfg.Model, nil
 }
+
+// resolveBackendWithModels returns a backend and both fast/slow model names.
+// Used for two-phase operations like decompose that need both models.
+func resolveBackendWithModels(cfg *config.Config) (*namedBackend, string, string, error) {
+	backendName := globalBackend
+	if backendName == "" {
+		backendName = cfg.Defaults.Backend
+	}
+
+	bCfg, ok := cfg.Backends[backendName]
+	if !ok {
+		return nil, "", "", fmt.Errorf("unknown backend: %s", backendName)
+	}
+
+	// Apply variant override
+	if globalVariant != "" {
+		bCfg.Variant = globalVariant
+	}
+
+	var backend backends.Backend
+	switch backendName {
+	case "opencode":
+		backend = opencode.New(bCfg)
+	case "claude":
+		backend = claude.New(bCfg)
+	default:
+		return nil, "", "", fmt.Errorf("unsupported backend: %s", backendName)
+	}
+
+	// If user specified a model, use it for both (override behavior)
+	fastModel := bCfg.Models.Fast
+	slowModel := bCfg.Models.Slow
+	if globalModel != "" {
+		fastModel = globalModel
+		slowModel = globalModel
+	}
+
+	return &namedBackend{Backend: backend, name: backendName}, fastModel, slowModel, nil
+}

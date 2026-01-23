@@ -7,7 +7,26 @@ import (
 	"github.com/yarlson/turbine/internal/tasks"
 )
 
-// DecomposeUserPrompt builds the user prompt for the decomposition task.
+// ExploreUserPrompt builds the user prompt for Phase 1: codebase exploration.
+func ExploreUserPrompt(prdContent string) string {
+	return fmt.Sprintf(`## PRD to Implement:
+
+%s
+
+## Instructions
+
+Explore this repository to understand its patterns and conventions BEFORE we create tasks.
+
+Focus on:
+1. Is this greenfield or an existing project?
+2. What development patterns are used (TDD, testing frameworks, etc.)?
+3. What coding conventions should new code follow?
+4. How are commits typically structured?
+
+Do NOT create any files. Just explore and summarize your findings.`, prdContent)
+}
+
+// DecomposeUserPrompt builds the user prompt for Phase 2: task generation.
 func DecomposeUserPrompt(prdContent, outputPath string) string {
 	return fmt.Sprintf(`## PRD Content:
 
@@ -15,10 +34,14 @@ func DecomposeUserPrompt(prdContent, outputPath string) string {
 
 ## Instructions
 
+Now create the tasks file based on your exploration findings.
+
 Write the tasks file to: %s
 
 Use your file writing tools to create the file. Do NOT output YAML as text.
-Create the .turbine directory first if it doesn't exist: mkdir -p .turbine`, prdContent, outputPath)
+Create the .turbine directory first if it doesn't exist: mkdir -p .turbine
+
+IMPORTANT: Apply the patterns and conventions you discovered during exploration.`, prdContent, outputPath)
 }
 
 // DecomposeFixPrompt builds the user prompt for fixing invalid decomposition YAML.

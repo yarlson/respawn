@@ -16,6 +16,16 @@ type Decomposer struct {
 	repoRoot string
 }
 
+// DecomposeOptions configures the two-phase decomposition process.
+type DecomposeOptions struct {
+	// FastModel is used for Phase 1: codebase exploration
+	FastModel string
+	// SlowModel is used for Phase 2: task generation
+	SlowModel string
+	// ArtifactsDir is the path where stdout/stderr and other run data should be captured
+	ArtifactsDir string
+}
+
 const maxValidationRetries = 2
 
 func New(backend backends.Backend, repoRoot string) *Decomposer {
@@ -26,9 +36,11 @@ func New(backend backends.Backend, repoRoot string) *Decomposer {
 }
 
 // Decompose instructs the coding agent to create .turbine/tasks.yaml from a PRD.
-// The agent writes the file directly using its tools.
-// model specifies which LLM model to use for task decomposition.
-func (d *Decomposer) Decompose(ctx context.Context, prdPath string, artifactsDir string, model string) error {
+// It uses a two-phase approach:
+// Phase 1 (fast model): Explore the codebase to understand patterns and conventions
+// Phase 2 (slow model): Generate the tasks.yaml using the gathered context
+// Both phases run in the same session using --continue.
+func (d *Decomposer) Decompose(ctx context.Context, prdPath string, opts DecomposeOptions) error {
 	prdContent, err := os.ReadFile(prdPath)
 	if err != nil {
 		return fmt.Errorf("read PRD: %w", err)
@@ -37,22 +49,33 @@ func (d *Decomposer) Decompose(ctx context.Context, prdPath string, artifactsDir
 	outputPath := ".turbine/tasks.yaml"
 	tasksPath := filepath.Join(d.repoRoot, outputPath)
 
+	// Start session without specifying model - we'll set it per-send
 	sessionID, err := d.backend.StartSession(ctx, backends.SessionOptions{
 		WorkingDir:   d.repoRoot,
-		ArtifactsDir: artifactsDir,
-		Model:        model,
+		ArtifactsDir: opts.ArtifactsDir,
 	})
 	if err != nil {
 		return fmt.Errorf("start session: %w", err)
 	}
 
-	// Instruct the coding agent to create the tasks file
-	userPrompt := prompt.DecomposerSystemPrompt + "\n\n" + prompt.DecomposeUserPrompt(string(prdContent), outputPath)
+	// Phase 1: Explore codebase with fast model
+	explorePrompt := prompt.ExploreSystemPrompt + "\n\n" + prompt.ExploreUserPrompt(string(prdContent))
+	_, err = d.backend.Send(ctx, sessionID, explorePrompt, backends.SendOptions{
+		Model: opts.FastModel,
+	})
+	if err != nil {
+		return fmt.Errorf("explore phase: %w", err)
+	}
+
+	// Phase 2: Generate tasks with slow model (continues in same session)
+	decomposePrompt := prompt.DecomposerSystemPrompt + "\n\n" + prompt.DecomposeUserPrompt(string(prdContent), outputPath)
 
 	var lastErr error
 
 	for i := 0; i <= maxValidationRetries; i++ {
-		_, err := d.backend.Send(ctx, sessionID, userPrompt, backends.SendOptions{})
+		_, err := d.backend.Send(ctx, sessionID, decomposePrompt, backends.SendOptions{
+			Model: opts.SlowModel,
+		})
 		if err != nil {
 			return fmt.Errorf("send prompt: %w", err)
 		}
@@ -66,7 +89,7 @@ func (d *Decomposer) Decompose(ctx context.Context, prdPath string, artifactsDir
 		// Ask agent to fix the file
 		if i < maxValidationRetries {
 			fileContent, _ := os.ReadFile(tasksPath)
-			userPrompt = prompt.DecomposeFixPrompt(string(prdContent), string(fileContent), lastErr.Error())
+			decomposePrompt = prompt.DecomposeFixPrompt(string(prdContent), string(fileContent), lastErr.Error())
 		}
 	}
 
