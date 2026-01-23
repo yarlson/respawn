@@ -59,7 +59,7 @@ func (p *RetryPolicy) Execute(ctx context.Context, r *Runner, task *tasks.Task, 
 		// Cycle exhausted, increment cycle and reset
 		if r.State.Cycle < p.MaxCycles {
 			r.State.Cycle++
-			fmt.Printf("  %s Cycle %d exhausted. Resetting to %s\n", ui.Yellow("⟳"), r.State.Cycle-1, ui.Dim(r.State.LastSavepointCommit[:8]))
+			fmt.Printf("  %s Cycle %d failed. Respawning at %s\n", ui.Yellow("⟳"), r.State.Cycle-1, ui.Dim(r.State.LastSavepointCommit[:8]))
 			if err := gitx.ResetHard(ctx, r.RepoRoot, r.State.LastSavepointCommit); err != nil {
 				return fmt.Errorf("reset to savepoint: %w", err)
 			}
@@ -75,5 +75,5 @@ func (p *RetryPolicy) Execute(ctx context.Context, r *Runner, task *tasks.Task, 
 
 	// All cycles exhausted
 	task.Status = tasks.StatusFailed
-	return fmt.Errorf("%s failed after %d cycles", task.ID, p.MaxCycles)
+	return fmt.Errorf("%s failed after %d lives", task.ID, p.MaxCycles)
 }

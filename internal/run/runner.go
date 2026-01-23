@@ -46,7 +46,7 @@ func NewRunner(ctx context.Context, cfg Config) (*Runner, error) {
 	// tasks.yaml presence - check this early as it defines if we are in a respawn context
 	tasksPath := filepath.Join(repoRoot, ".respawn", "tasks.yaml")
 	if _, err := os.Stat(tasksPath); os.IsNotExist(err) {
-		return nil, fmt.Errorf("task file not found: %s", tasksPath)
+		return nil, fmt.Errorf("mission file not found: %s", tasksPath)
 	}
 
 	taskList, err := tasks.Load(tasksPath)
@@ -74,7 +74,7 @@ func NewRunner(ctx context.Context, cfg Config) (*Runner, error) {
 			return nil, fmt.Errorf("check repository status: %w", err)
 		}
 		if dirty {
-			return nil, fmt.Errorf("uncommitted changes detected; commit or stash before starting")
+			return nil, fmt.Errorf("uncommitted changes detected; save your progress before starting")
 		}
 	}
 
@@ -143,7 +143,13 @@ func (r *Runner) PrintSummary() {
 	}
 
 	fmt.Printf("\n%s\n", ui.Divider(40))
-	fmt.Printf("%s\n", ui.SummaryStats(total, done, runnable, blocked, failed))
+	fmt.Printf("%d tasks: %s %s %s %s\n",
+		total,
+		ui.Green(fmt.Sprintf("%d cleared", done)),
+		ui.Cyan(fmt.Sprintf("%d ready", runnable)),
+		ui.Yellow(fmt.Sprintf("%d blocked", blocked)),
+		ui.Red(fmt.Sprintf("%d failed", failed)),
+	)
 }
 
 func (r *Runner) Run(ctx context.Context, backend backends.Backend) error {

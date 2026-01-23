@@ -15,7 +15,7 @@ var (
 
 var rootCmd = &cobra.Command{
 	Use:   "respawn",
-	Short: "Run autonomous coding tasks from a task file",
+	Short: "Run tasks from a loaded mission",
 	Long:  `Reads tasks from .respawn/tasks.yaml and executes each one autonomously using an AI backend.`,
 }
 

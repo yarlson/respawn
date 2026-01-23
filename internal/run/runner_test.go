@@ -53,7 +53,7 @@ func TestRunner_Preflight(t *testing.T) {
 		repoDir := setupTestRepo(t)
 		_, err := NewRunner(ctx, Config{Cwd: repoDir})
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "task file not found")
+		assert.Contains(t, err.Error(), "mission file not found")
 	})
 
 	t.Run("dirty tree error", func(t *testing.T) {
@@ -72,7 +72,7 @@ func TestRunner_Preflight(t *testing.T) {
 
 		_, err = NewRunner(ctx, Config{Cwd: repoDir})
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "uncommitted changes detected")
+		assert.Contains(t, err.Error(), "save your progress")
 	})
 
 	t.Run("resume bypasses dirty check", func(t *testing.T) {

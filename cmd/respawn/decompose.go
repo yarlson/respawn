@@ -22,16 +22,16 @@ var (
 	prdPath string
 )
 
-var decomposeCmd = &cobra.Command{
-	Use:   "decompose",
-	Short: "Convert a PRD into a task file",
+var loadCmd = &cobra.Command{
+	Use:   "load",
+	Short: "Load a PRD into the mission file",
 	Long:  `Reads a PRD file and generates .respawn/tasks.yaml with executable tasks.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runDecompose(cmd)
+		return runLoad(cmd)
 	},
 }
 
-func runDecompose(cmd *cobra.Command) error {
+func runLoad(cmd *cobra.Command) error {
 	ctx := cmd.Context()
 
 	// 1. Preflight
@@ -146,8 +146,8 @@ func runDecompose(cmd *cobra.Command) error {
 }
 
 func init() {
-	rootCmd.AddCommand(decomposeCmd)
+	rootCmd.AddCommand(loadCmd)
 
-	decomposeCmd.Flags().StringVar(&prdPath, "prd", "", "Path to the PRD file")
-	_ = decomposeCmd.MarkFlagRequired("prd")
+	loadCmd.Flags().StringVar(&prdPath, "prd", "", "Path to the PRD file")
+	_ = loadCmd.MarkFlagRequired("prd")
 }

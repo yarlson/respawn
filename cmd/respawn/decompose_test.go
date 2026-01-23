@@ -32,7 +32,7 @@ func setupTestRepo(t *testing.T) string {
 	return tmpDir
 }
 
-func TestDecomposeCmdFlags(t *testing.T) {
+func TestLoadCmdFlags(t *testing.T) {
 	repoRoot := setupTestRepo(t)
 	prdFile := filepath.Join(repoRoot, "test.md")
 	require.NoError(t, os.WriteFile(prdFile, []byte("prd content"), 0644))
@@ -46,19 +46,19 @@ func TestDecomposeCmdFlags(t *testing.T) {
 	buf := new(bytes.Buffer)
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"decompose"})
+	cmd.SetArgs([]string{"load"})
 	err := cmd.Execute()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "required flag(s) \"prd\" not set")
 
 	// Test with --prd and invalid backend
-	cmd.SetArgs([]string{"decompose", "--prd", "test.md", "--backend", "nonexistent", "--yes"})
+	cmd.SetArgs([]string{"load", "--prd", "test.md", "--backend", "nonexistent", "--yes"})
 	err = cmd.Execute()
 	assert.Error(t, err) // Fails due to invalid backend
 	assert.Contains(t, err.Error(), "unknown backend")
 }
 
-func TestDecomposeCmdAllFlags(t *testing.T) {
+func TestLoadCmdAllFlags(t *testing.T) {
 	repoRoot := setupTestRepo(t)
 	prdFile := filepath.Join(repoRoot, "test.md")
 	require.NoError(t, os.WriteFile(prdFile, []byte("prd content"), 0644))
@@ -75,7 +75,7 @@ func TestDecomposeCmdAllFlags(t *testing.T) {
 	cmd := RootCmd()
 
 	cmd.SetArgs([]string{
-		"decompose",
+		"load",
 		"--prd", "test.md",
 		"--backend", "opencode",
 		"--model", "gpt-4",

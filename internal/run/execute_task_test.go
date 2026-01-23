@@ -111,7 +111,7 @@ func TestExecuteTask_VerifyFailure(t *testing.T) {
 
 	err := r.ExecuteTask(ctx, mock)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed after 3 cycles")
+	assert.Contains(t, err.Error(), "failed after 3 lives")
 
 	// Verify status updated to failed (policy exhausted)
 	updatedTasks, err := tasks.Load(tasksPath)
