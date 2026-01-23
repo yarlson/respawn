@@ -100,12 +100,12 @@ func TestParseSessionID(t *testing.T) {
 	}{
 		{
 			name:     "valid json",
-			output:   `{"session_id": "sid123", "output": "hello"}`,
+			output:   `{"sessionID": "sid123", "output": "hello"}`,
 			expected: "sid123",
 		},
 		{
 			name:     "json with prefix",
-			output:   "Welcome!\n" + `{"session_id": "sid456"}`,
+			output:   "Welcome!\n" + `{"sessionID": "sid456"}`,
 			expected: "sid456",
 		},
 		{

@@ -12,7 +12,7 @@ func TestMerge(t *testing.T) {
 		eff := Merge(cfg, Overrides{})
 
 		assert.Equal(t, "opencode", eff.Backend)
-		assert.Equal(t, "claude-3-5-sonnet-latest", eff.Model)
+		assert.Equal(t, "anthropic/claude-opus-4-5", eff.Model)
 		assert.False(t, eff.Quiet)
 		assert.False(t, eff.Verbose)
 		assert.False(t, eff.Debug)
@@ -27,7 +27,7 @@ func TestMerge(t *testing.T) {
 		eff := Merge(cfg, Overrides{})
 
 		assert.Equal(t, "claude", eff.Backend)
-		assert.Equal(t, "claude-3-5-sonnet-latest", eff.Model)
+		assert.Equal(t, "claude-4-5-opus-latest", eff.Model)
 		assert.True(t, eff.Quiet)
 	})
 

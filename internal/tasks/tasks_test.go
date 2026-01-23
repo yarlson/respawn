@@ -73,7 +73,7 @@ tasks:
 		require.NoError(t, err)
 
 		_, err = Load(tasksPath)
-		assert.ErrorContains(t, err, "task T-001 depends on non-existent task: T-002")
+		assert.ErrorContains(t, err, "task T-001 depends on unknown task: T-002")
 	})
 
 	t.Run("invalid status", func(t *testing.T) {
@@ -87,7 +87,7 @@ tasks:
 		require.NoError(t, err)
 
 		_, err = Load(tasksPath)
-		assert.ErrorContains(t, err, "invalid status for task T-001: unknown")
+		assert.ErrorContains(t, err, "invalid status \"unknown\" for task T-001")
 	})
 
 	t.Run("file not found", func(t *testing.T) {

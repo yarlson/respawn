@@ -51,11 +51,11 @@ func TestDecomposeCmdFlags(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "required flag(s) \"prd\" not set")
 
-	// Test with --prd
-	cmd.SetArgs([]string{"decompose", "--prd", "test.md", "--yes"})
+	// Test with --prd and invalid backend
+	cmd.SetArgs([]string{"decompose", "--prd", "test.md", "--backend", "nonexistent", "--yes"})
 	err = cmd.Execute()
-	assert.Error(t, err) // Still fails but now due to config/backend
-	assert.Contains(t, err.Error(), "no YAML found")
+	assert.Error(t, err) // Fails due to invalid backend
+	assert.Contains(t, err.Error(), "unknown backend")
 }
 
 func TestDecomposeCmdAllFlags(t *testing.T) {

@@ -10,10 +10,10 @@ import (
 )
 
 func TestSystemPrompts(t *testing.T) {
-	assert.Contains(t, DecomposerSystemPrompt, "You are Task Decomposer")
+	assert.Contains(t, DecomposerSystemPrompt, "task decomposer")
 	assert.Contains(t, DecomposerSystemPrompt, ".respawn/tasks.yaml")
-	assert.Contains(t, ImplementSystemPrompt, "You are a coding agent working within the Respawn harness.")
-	assert.Contains(t, RetrySystemPrompt, "RETRY after verification failure.")
+	assert.Contains(t, ImplementSystemPrompt, "coding agent working within the Respawn harness")
+	assert.Contains(t, RetrySystemPrompt, "retry after verification failure")
 }
 
 func TestDecomposeUserPrompt(t *testing.T) {
