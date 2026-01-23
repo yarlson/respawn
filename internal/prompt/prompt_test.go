@@ -9,13 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSystemPrompts(t *testing.T) {
-	assert.Contains(t, DecomposerSystemPrompt, "task decomposer")
-	assert.Contains(t, DecomposerSystemPrompt, ".turbine/tasks.yaml")
-	assert.Contains(t, ImplementSystemPrompt, "coding agent working within the Turbine harness")
-	assert.Contains(t, RetrySystemPrompt, "retry after verification failure")
-}
-
 func TestDecomposeUserPrompt(t *testing.T) {
 	prd := "Build a rocket."
 	path := ".turbine/tasks.yaml"
@@ -93,4 +86,16 @@ func TestDeterministicFormatting(t *testing.T) {
 	p2 := ImplementUserPrompt(task)
 
 	assert.Equal(t, p1, p2)
+}
+
+func TestAgentsUserPrompt(t *testing.T) {
+	prd := "Build a CLI tool for managing tasks."
+	prompt := AgentsUserPrompt(prd)
+
+	assert.Contains(t, prompt, prd)
+	assert.Contains(t, prompt, "PRD Content:")
+	assert.Contains(t, prompt, "AGENTS.md")
+	assert.Contains(t, prompt, "docs/TESTING.md")
+	assert.Contains(t, prompt, "TDD")
+	assert.Contains(t, prompt, "CLAUDE.md symlink")
 }

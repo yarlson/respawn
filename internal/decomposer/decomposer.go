@@ -8,6 +8,7 @@ import (
 
 	"github.com/yarlson/turbine/internal/backends"
 	"github.com/yarlson/turbine/internal/prompt"
+	"github.com/yarlson/turbine/internal/prompt/roles"
 	"github.com/yarlson/turbine/internal/tasks"
 )
 
@@ -60,8 +61,11 @@ func (d *Decomposer) Decompose(ctx context.Context, prdPath string, opts Decompo
 		return fmt.Errorf("start session: %w", err)
 	}
 
-	// Phase 1: Explore codebase with fast model
-	explorePrompt := prompt.ExploreSystemPrompt + "\n\n" + prompt.ExploreUserPrompt(string(prdContent))
+	// Phase 1: Explore - no methodologies needed
+	exploreCtx := prompt.ExecutionContext{Phase: prompt.PhaseExplore}
+	exploreMethods := prompt.SelectMethodologies(exploreCtx)
+	exploreSystemPrompt := prompt.Compose(roles.RoleExplorer, exploreMethods, "")
+	explorePrompt := exploreSystemPrompt + "\n\n" + prompt.ExploreUserPrompt(string(prdContent))
 	_, err = d.backend.Send(ctx, sessionID, explorePrompt, backends.SendOptions{
 		Model:   opts.FastModel,
 		Variant: opts.FastVariant,
@@ -70,8 +74,11 @@ func (d *Decomposer) Decompose(ctx context.Context, prdPath string, opts Decompo
 		return fmt.Errorf("explore phase: %w", err)
 	}
 
-	// Phase 2: Generate tasks with slow model (continues in same session)
-	decomposePrompt := prompt.DecomposerSystemPrompt + "\n\n" + prompt.DecomposeUserPrompt(string(prdContent), outputPath)
+	// Phase 2: Decompose - uses Planning methodology
+	decomposeCtx := prompt.ExecutionContext{Phase: prompt.PhaseDecompose}
+	decomposeMethods := prompt.SelectMethodologies(decomposeCtx)
+	decomposeSystemPrompt := prompt.Compose(roles.RoleDecomposer, decomposeMethods, "")
+	decomposePrompt := decomposeSystemPrompt + "\n\n" + prompt.DecomposeUserPrompt(string(prdContent), outputPath)
 
 	var lastErr error
 

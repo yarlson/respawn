@@ -8,6 +8,7 @@ import (
 	"github.com/yarlson/turbine/internal/backends"
 	"github.com/yarlson/turbine/internal/gitx"
 	"github.com/yarlson/turbine/internal/prompt"
+	"github.com/yarlson/turbine/internal/prompt/roles"
 	"github.com/yarlson/turbine/internal/tasks"
 	"github.com/yarlson/turbine/internal/ui"
 )
@@ -36,6 +37,9 @@ func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend backends.Backe
 		return fmt.Errorf("set up artifacts: %w", err)
 	}
 
+	// Track failure output for retry context
+	var lastFailureOutput string
+
 	err = policy.Execute(ctx, r, task, func(ctx context.Context, sessionID string) error {
 		// Session setup
 		if sessionID == "" {
@@ -53,11 +57,42 @@ func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend backends.Backe
 			fmt.Printf("  %s %s\n", ui.Dim("Session:"), ui.Dim(sessionID))
 		}
 
-		// Prompt building
-		userPrompt := prompt.ImplementUserPrompt(*task)
+		// Determine phase based on current stroke and rotation
+		phase := prompt.PhaseImplement
+		if r.State.Stroke > 1 || r.State.Rotation > 1 {
+			phase = prompt.PhaseRetry
+		}
+
+		// Build execution context
+		execCtx := prompt.ExecutionContext{
+			Phase:    phase,
+			Attempt:  r.State.Stroke,
+			Rotation: r.State.Rotation,
+		}
+
+		// Select role based on phase
+		role := roles.RoleImplementer
+		if phase == prompt.PhaseRetry {
+			role = roles.RoleRetrier
+		}
+
+		// Compose system prompt with methodologies
+		meths := prompt.SelectMethodologies(execCtx)
+		systemPrompt := prompt.Compose(role, meths, "")
+
+		// Build user prompt based on phase
+		var userPrompt string
+		if phase == prompt.PhaseRetry {
+			userPrompt = prompt.RetryUserPrompt(*task, lastFailureOutput)
+		} else {
+			userPrompt = prompt.ImplementUserPrompt(*task)
+		}
+
+		// Combine system and user prompts
+		fullPrompt := systemPrompt + "\n\n---\n\n" + userPrompt
 
 		// Invoke backend
-		_, err = backend.Send(ctx, sessionID, userPrompt, backends.SendOptions{})
+		_, err = backend.Send(ctx, sessionID, fullPrompt, backends.SendOptions{})
 		if err != nil {
 			return fmt.Errorf("backend failed: %w", err)
 		}
@@ -67,6 +102,8 @@ func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend backends.Backe
 		_, verifyErr := RunVerification(ctx, arts, task.Verify)
 		if verifyErr != nil {
 			fmt.Printf("  %s\n", ui.FailureMarker()+" Verification failed")
+			// Capture failure output for retry context
+			lastFailureOutput = verifyErr.Error()
 			return fmt.Errorf("verification failed: %w", verifyErr)
 		}
 		fmt.Printf("  %s\n", ui.SuccessMarker()+" Verification passed")

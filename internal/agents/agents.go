@@ -7,6 +7,7 @@ import (
 
 	"github.com/yarlson/turbine/internal/backends"
 	"github.com/yarlson/turbine/internal/prompt"
+	"github.com/yarlson/turbine/internal/prompt/roles"
 )
 
 type Generator struct {
@@ -41,7 +42,11 @@ func (g *Generator) Generate(ctx context.Context, prdPath string, artifactsDir s
 	}
 
 	// Instruct the coding agent to generate and write all files
-	userPrompt := prompt.AgentsSystemPrompt + "\n\n" + prompt.AgentsUserPrompt(string(prdContent))
+	// AgentsGenerator is self-contained, no methodologies needed
+	agentsCtx := prompt.ExecutionContext{Phase: prompt.PhaseGenerateAgents}
+	agentsMethods := prompt.SelectMethodologies(agentsCtx)
+	systemPrompt := prompt.Compose(roles.RoleAgentsGenerator, agentsMethods, "")
+	userPrompt := systemPrompt + "\n\n" + prompt.AgentsUserPrompt(string(prdContent))
 
 	_, err = g.backend.Send(ctx, sessionID, userPrompt, backends.SendOptions{})
 	if err != nil {

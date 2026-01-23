@@ -138,3 +138,46 @@ func trimFailureOutput(out string) string {
 
 	return out
 }
+
+// AgentsUserPrompt builds the user prompt for AGENTS.md generation.
+func AgentsUserPrompt(prdContent string) string {
+	return `PRD Content:
+` + prdContent + `
+
+Analyze this PRD and create appropriate guidelines:
+
+1. FIRST: Determine project type and select methodology:
+   - Backend/API/Library → TDD (Test-Driven Development)
+   - Frontend/UI → Browser validation, visual testing
+   - CLI tools → Output/exit code verification
+   - Mixed → Apply appropriate method to each component
+
+2. AGENTS.md (in repository root)
+   - One-sentence project description
+   - **Development Methodology section** - state TDD or other approach clearly
+   - Core stack/technologies
+   - Primary commands (build, test, run)
+   - Links to docs/ files
+   - Keep it minimal (≤300 lines)
+
+3. docs/TESTING.md (REQUIRED)
+   - Describe the feedback loop approach for this project type
+   - For TDD: explain Red-Green-Refactor cycle
+   - For UI: explain browser/visual validation
+   - For CLI: explain output verification
+   - Include concrete examples
+
+4. Other docs/*.md files (create only what's relevant)
+   - docs/GO_CONVENTIONS.md (if Go project)
+   - docs/TYPESCRIPT.md (if TypeScript project)
+   - docs/ARCHITECTURE.md (system design)
+   - docs/SAFETY.md (security guardrails)
+   - docs/API_CONVENTIONS.md (if has APIs)
+
+5. CLAUDE.md symlink
+   - On macOS/Linux: Run: ln -sf AGENTS.md CLAUDE.md
+   - On Windows: Run: mklink CLAUDE.md AGENTS.md (or copy if mklink unavailable)
+   - The symlink must point to AGENTS.md so tools can find project guidelines
+
+Write all files now using your tools. Do not output file contents as text.`
+}
