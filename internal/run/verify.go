@@ -23,7 +23,7 @@ type VerifyError struct {
 }
 
 func (e *VerifyError) Error() string {
-	return fmt.Sprintf("verification failed: command %q exited with code %d (log: %s): %v", e.Command, e.ExitCode, e.LogPath, e.Err)
+	return fmt.Sprintf("verification failed: %q exited %d (see %s): %v", e.Command, e.ExitCode, e.LogPath, e.Err)
 }
 
 func (e *VerifyError) Unwrap() error {

@@ -14,7 +14,7 @@ func RepoRoot(ctx context.Context, cwd string) (string, error) {
 	cmd.Dir = cwd
 	out, err := cmd.Output()
 	if err != nil {
-		return "", fmt.Errorf("detect repo root: %w", err)
+		return "", fmt.Errorf("not a git repository: %w", err)
 	}
 	return strings.TrimSpace(string(out)), nil
 }
@@ -25,7 +25,7 @@ func IsDirty(ctx context.Context, repoRoot string) (bool, error) {
 	cmd.Dir = repoRoot
 	out, err := cmd.Output()
 	if err != nil {
-		return false, fmt.Errorf("check dirty status: %w", err)
+		return false, fmt.Errorf("could not check repository status: %w", err)
 	}
 	return len(strings.TrimSpace(string(out))) > 0, nil
 }
@@ -36,7 +36,7 @@ func CurrentHash(ctx context.Context, repoRoot string) (string, error) {
 	cmd.Dir = repoRoot
 	out, err := cmd.Output()
 	if err != nil {
-		return "", fmt.Errorf("git rev-parse HEAD: %w", err)
+		return "", fmt.Errorf("get commit hash: %w", err)
 	}
 	return strings.TrimSpace(string(out)), nil
 }

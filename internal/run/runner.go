@@ -45,7 +45,7 @@ func NewRunner(ctx context.Context, cfg Config) (*Runner, error) {
 	// tasks.yaml presence - check this early as it defines if we are in a respawn context
 	tasksPath := filepath.Join(repoRoot, ".respawn", "tasks.yaml")
 	if _, err := os.Stat(tasksPath); os.IsNotExist(err) {
-		return nil, fmt.Errorf(".respawn/tasks.yaml missing at %s", tasksPath)
+		return nil, fmt.Errorf("task file not found: %s", tasksPath)
 	}
 
 	taskList, err := tasks.Load(tasksPath)
@@ -70,30 +70,30 @@ func NewRunner(ctx context.Context, cfg Config) (*Runner, error) {
 	if !exists {
 		dirty, err := gitx.IsDirty(ctx, repoRoot)
 		if err != nil {
-			return nil, fmt.Errorf("check if repo is dirty: %w", err)
+			return nil, fmt.Errorf("check repository status: %w", err)
 		}
 		if dirty {
-			return nil, fmt.Errorf("working tree is dirty; commit or stash changes before starting a new run")
+			return nil, fmt.Errorf("uncommitted changes detected. Commit or stash before starting.")
 		}
 	}
 
 	// .gitignore check
 	missing, err := gitx.MissingRespawnIgnores(ctx, repoRoot)
 	if err != nil {
-		return nil, fmt.Errorf("check gitignore: %w", err)
+		return nil, fmt.Errorf("check .gitignore: %w", err)
 	}
 
 	if len(missing) > 0 {
 		if cfg.AutoAddIgnore {
 			if err := gitx.AddIgnoresToGitignore(repoRoot, missing); err != nil {
-				return nil, fmt.Errorf("add missing ignores to .gitignore: %w", err)
+				return nil, fmt.Errorf("update .gitignore: %w", err)
 			}
 		} else {
-			fmt.Printf("Warning: The following paths are not ignored by git:\n")
+			fmt.Printf("Not in .gitignore:\n")
 			for _, m := range missing {
-				fmt.Printf("  - %s\n", m)
+				fmt.Printf("  %s\n", m)
 			}
-			fmt.Printf("Run with --yes to automatically add them to .gitignore.\n")
+			fmt.Printf("Use --yes to add automatically.\n")
 		}
 	}
 
@@ -141,7 +141,7 @@ func (r *Runner) PrintSummary() {
 		}
 	}
 
-	fmt.Printf("Tasks: %d total, %d done, %d runnable, %d blocked, %d failed\n",
+	fmt.Printf("%d tasks: %d done, %d ready, %d blocked, %d failed\n",
 		total, done, runnable, blocked, failed)
 }
 

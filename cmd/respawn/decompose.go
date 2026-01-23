@@ -23,8 +23,8 @@ var (
 
 var decomposeCmd = &cobra.Command{
 	Use:   "decompose",
-	Short: "Decompose a PRD into tasks",
-	Long:  `Decompose takes a PRD file and breaks it down into actionable tasks in .respawn/tasks.yaml.`,
+	Short: "Convert a PRD into a task file",
+	Long:  `Reads a PRD file and generates .respawn/tasks.yaml with executable tasks.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runDecompose(cmd)
 	},
@@ -53,8 +53,8 @@ func runDecompose(cmd *cobra.Command) error {
 				return err
 			}
 		} else {
-			fmt.Printf("Missing required .gitignore entries: %v\n", missingIgnores)
-			fmt.Print("Add them now? [y/N]: ")
+			fmt.Printf("These paths need to be in .gitignore: %v\n", missingIgnores)
+			fmt.Print("Add them? [y/N]: ")
 			var resp string
 			_, _ = fmt.Scanln(&resp)
 			if strings.ToLower(resp) == "y" {
@@ -62,7 +62,7 @@ func runDecompose(cmd *cobra.Command) error {
 					return err
 				}
 			} else {
-				return fmt.Errorf("required .gitignore entries missing")
+				return fmt.Errorf("canceled: .gitignore entries required")
 			}
 		}
 	}
@@ -76,12 +76,12 @@ func runDecompose(cmd *cobra.Command) error {
 	tasksPath := filepath.Join(repoRoot, ".respawn", "tasks.yaml")
 	if _, err := os.Stat(tasksPath); err == nil {
 		if !globalYes {
-			fmt.Printf("%s already exists. Overwrite? [y/N]: ", tasksPath)
+			fmt.Printf("%s exists. Overwrite? [y/N]: ", tasksPath)
 			scanner := bufio.NewScanner(os.Stdin)
 			scanner.Scan()
 			resp := scanner.Text()
 			if strings.ToLower(resp) != "y" {
-				return fmt.Errorf("aborted by user")
+				return fmt.Errorf("canceled")
 			}
 		}
 	}
@@ -117,7 +117,7 @@ func runDecompose(cmd *cobra.Command) error {
 	case "claude":
 		backend = claude.New(bCfg.Command, bCfg.Args)
 	default:
-		return fmt.Errorf("backend %s not fully supported for decomposition yet", backendName)
+		return fmt.Errorf("backend %s does not support decompose", backendName)
 	}
 
 	// 5. Initialize Artifacts for logging
@@ -128,18 +128,18 @@ func runDecompose(cmd *cobra.Command) error {
 	}
 
 	d := decomposer.New(backend, repoRoot)
-	fmt.Printf("Decomposing PRD: %s using %s backend...\n", prdPath, backendName)
+	fmt.Printf("Generating tasks from %s (%s)...\n", prdPath, backendName)
 	if err := d.Decompose(ctx, prdPath, artifacts.Root()); err != nil {
 		return err
 	}
 
-	fmt.Printf("Successfully decomposed PRD into %s (Run ID: %s)\n", tasksPath, runID)
+	fmt.Printf("Created %s (run %s)\n", tasksPath, runID)
 	return nil
 }
 
 func init() {
 	rootCmd.AddCommand(decomposeCmd)
 
-	decomposeCmd.Flags().StringVar(&prdPath, "prd", "", "Path to the PRD file (required)")
+	decomposeCmd.Flags().StringVar(&prdPath, "prd", "", "Path to the PRD file")
 	_ = decomposeCmd.MarkFlagRequired("prd")
 }

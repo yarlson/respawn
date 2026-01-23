@@ -21,7 +21,7 @@ func (r *Runner) ExecuteTask(ctx context.Context, backend backends.Backend) erro
 
 // ExecuteTaskWithTask executes a specific task.
 func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend backends.Backend, task *tasks.Task) error {
-	fmt.Printf("TASK: %s (%s) start\n", task.Title, task.ID)
+	fmt.Printf("Starting: %s [%s]\n", task.Title, task.ID)
 
 	policy := &RetryPolicy{
 		MaxAttempts: r.Config.Retry.Attempts,
@@ -31,7 +31,7 @@ func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend backends.Backe
 	// Artifacts setup
 	arts, err := NewArtifacts(r.RepoRoot, r.State.RunID)
 	if err != nil {
-		return fmt.Errorf("create artifacts: %w", err)
+		return fmt.Errorf("set up artifacts: %w", err)
 	}
 
 	err = policy.Execute(ctx, r, task, func(ctx context.Context, sessionID string) error {
@@ -43,10 +43,10 @@ func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend backends.Backe
 				ArtifactsDir: arts.Root(),
 			})
 			if err != nil {
-				return fmt.Errorf("start backend session: %w", err)
+				return fmt.Errorf("start session: %w", err)
 			}
 			r.State.BackendSessionID = sessionID
-			fmt.Printf("New Session ID: %s\n", sessionID)
+			fmt.Printf("Session: %s\n", sessionID)
 		}
 
 		// Prompt building
@@ -55,17 +55,17 @@ func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend backends.Backe
 		// Invoke backend
 		_, err = backend.Send(ctx, sessionID, userPrompt, backends.SendOptions{})
 		if err != nil {
-			return fmt.Errorf("backend execution failed: %w", err)
+			return fmt.Errorf("backend failed: %w", err)
 		}
 
 		// Run verify commands
-		fmt.Printf("Verification: running...\n")
+		fmt.Printf("Verifying...\n")
 		_, verifyErr := RunVerification(ctx, arts, task.Verify)
 		if verifyErr != nil {
-			fmt.Printf("Verification: FAILED\n")
+			fmt.Printf("Verification failed\n")
 			return fmt.Errorf("verification failed: %w", verifyErr)
 		}
-		fmt.Printf("Verification: PASSED\n")
+		fmt.Printf("Verification passed\n")
 		return nil
 	})
 
@@ -74,7 +74,7 @@ func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend backends.Backe
 		task.Status = tasks.StatusDone
 	} else {
 		// policy.Execute already sets task.Status = tasks.StatusFailed on exhaustion
-		fmt.Printf("TASK: %s (%s) FAILED: %v\n", task.Title, task.ID, err)
+		fmt.Printf("Failed: %s [%s] — %v\n", task.Title, task.ID, err)
 	}
 
 	tasksPath := filepath.Join(r.RepoRoot, ".respawn", "tasks.yaml")
@@ -87,9 +87,9 @@ func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend backends.Backe
 		footer := fmt.Sprintf("Respawn: %s", task.ID)
 		hash, commitErr := gitx.CommitSavePoint(ctx, r.RepoRoot, task.CommitMessage, footer)
 		if commitErr != nil {
-			return fmt.Errorf("git commit: %w", commitErr)
+			return fmt.Errorf("commit changes: %w", commitErr)
 		}
-		fmt.Printf("Commit: %s\n", hash)
+		fmt.Printf("Committed: %s\n", hash)
 
 		// Update last save point for next task
 		r.State.LastSavepointCommit = hash

@@ -15,8 +15,8 @@ var (
 
 var rootCmd = &cobra.Command{
 	Use:   "respawn",
-	Short: "Respawn is a minimal, reliable task execution harness",
-	Long:  `Respawn reads tasks from .respawn/tasks.yaml and executes them autonomously.`,
+	Short: "Run autonomous coding tasks from a task file",
+	Long:  `Reads tasks from .respawn/tasks.yaml and executes each one autonomously using an AI backend.`,
 }
 
 // RootCmd returns the root cobra command.
@@ -25,10 +25,10 @@ func RootCmd() *cobra.Command {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&globalBackend, "backend", "", "Backend to use")
-	rootCmd.PersistentFlags().StringVar(&globalModel, "model", "", "Model to use")
-	rootCmd.PersistentFlags().StringVar(&globalVariant, "variant", "", "Variant to use")
-	rootCmd.PersistentFlags().BoolVar(&globalYes, "yes", false, "Auto-approve prompts")
-	rootCmd.PersistentFlags().BoolVar(&globalVerbose, "verbose", false, "Enable verbose output")
-	rootCmd.PersistentFlags().BoolVar(&globalDebug, "debug", false, "Enable debug logging")
+	rootCmd.PersistentFlags().StringVar(&globalBackend, "backend", "", "AI backend (opencode, claude)")
+	rootCmd.PersistentFlags().StringVar(&globalModel, "model", "", "Model name for the backend")
+	rootCmd.PersistentFlags().StringVar(&globalVariant, "variant", "", "Variant configuration")
+	rootCmd.PersistentFlags().BoolVar(&globalYes, "yes", false, "Skip confirmation prompts")
+	rootCmd.PersistentFlags().BoolVar(&globalVerbose, "verbose", false, "Show detailed output")
+	rootCmd.PersistentFlags().BoolVar(&globalDebug, "debug", false, "Show debug logs")
 }

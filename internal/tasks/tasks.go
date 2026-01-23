@@ -55,7 +55,7 @@ func (l *TaskList) Validate() error {
 	ids := make(map[string]bool)
 	for _, t := range l.Tasks {
 		if t.ID == "" {
-			return fmt.Errorf("task ID cannot be empty")
+			return fmt.Errorf("task ID is required")
 		}
 		if ids[t.ID] {
 			return fmt.Errorf("duplicate task ID: %s", t.ID)
@@ -66,14 +66,14 @@ func (l *TaskList) Validate() error {
 		case StatusTodo, StatusDone, StatusFailed:
 			// ok
 		default:
-			return fmt.Errorf("invalid status for task %s: %s", t.ID, t.Status)
+			return fmt.Errorf("invalid status \"%s\" for task %s (expected: todo, done, failed)", t.Status, t.ID)
 		}
 	}
 
 	for _, t := range l.Tasks {
 		for _, dep := range t.Deps {
 			if !ids[dep] {
-				return fmt.Errorf("task %s depends on non-existent task: %s", t.ID, dep)
+				return fmt.Errorf("task %s depends on unknown task: %s", t.ID, dep)
 			}
 		}
 	}

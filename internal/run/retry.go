@@ -24,7 +24,7 @@ func (p *RetryPolicy) Execute(ctx context.Context, r *Runner, task *tasks.Task, 
 		if r.State.LastSavepointCommit == "" {
 			hash, err := gitx.CurrentHash(ctx, r.RepoRoot)
 			if err != nil {
-				return fmt.Errorf("get current hash for savepoint: %w", err)
+				return fmt.Errorf("get commit hash: %w", err)
 			}
 			r.State.LastSavepointCommit = hash
 		}
@@ -35,7 +35,7 @@ func (p *RetryPolicy) Execute(ctx context.Context, r *Runner, task *tasks.Task, 
 
 	for r.State.Cycle <= p.MaxCycles {
 		for r.State.Attempt <= p.MaxAttempts {
-			fmt.Printf("Attempt: cycle %d, attempt %d/%d\n", r.State.Cycle, r.State.Attempt, p.MaxAttempts)
+			fmt.Printf("Attempt %d/%d (cycle %d)\n", r.State.Attempt, p.MaxAttempts, r.State.Cycle)
 
 			err := execute(ctx, r.State.BackendSessionID)
 			if err == nil {
@@ -58,9 +58,9 @@ func (p *RetryPolicy) Execute(ctx context.Context, r *Runner, task *tasks.Task, 
 		// Cycle exhausted, increment cycle and reset
 		if r.State.Cycle < p.MaxCycles {
 			r.State.Cycle++
-			fmt.Printf("Cycle %d exhausted. Resetting to last save point: %s\n", r.State.Cycle-1, r.State.LastSavepointCommit)
+			fmt.Printf("Cycle %d exhausted. Resetting to %s\n", r.State.Cycle-1, r.State.LastSavepointCommit)
 			if err := gitx.ResetHard(ctx, r.RepoRoot, r.State.LastSavepointCommit); err != nil {
-				return fmt.Errorf("reset to save point: %w", err)
+				return fmt.Errorf("reset to savepoint: %w", err)
 			}
 			r.State.Attempt = 1
 			r.State.BackendSessionID = "" // Force new session
@@ -74,5 +74,5 @@ func (p *RetryPolicy) Execute(ctx context.Context, r *Runner, task *tasks.Task, 
 
 	// All cycles exhausted
 	task.Status = tasks.StatusFailed
-	return fmt.Errorf("task %s failed after %d cycles", task.ID, p.MaxCycles)
+	return fmt.Errorf("%s failed after %d cycles", task.ID, p.MaxCycles)
 }

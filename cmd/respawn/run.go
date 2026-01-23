@@ -60,7 +60,7 @@ func runCmd(cmd *cobra.Command, args []string) error {
 	r.PrintSummary()
 
 	if r.Resume {
-		fmt.Printf("Resuming run %s\n", r.State.RunID)
+		fmt.Printf("Resuming: %s\n", r.State.RunID)
 	}
 
 	return r.Run(ctx, backend)
