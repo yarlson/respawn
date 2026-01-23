@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/yarlson/respawn/internal/tasks"
+	"github.com/yarlson/turbine/internal/tasks"
 )
 
 // DecomposeUserPrompt builds the user prompt for the decomposition task.
@@ -16,7 +16,7 @@ func DecomposeUserPrompt(prdContent, outputPath string) string {
 func DecomposeFixPrompt(prdContent, failedYAML, validationError string) string {
 	var b strings.Builder
 
-	b.WriteString("## Task: Fix Invalid .respawn/tasks.yaml\n\n")
+	b.WriteString("## Task: Fix Invalid .turbine/tasks.yaml\n\n")
 	b.WriteString("The generated YAML is invalid. Please fix it based on the PRD and validation errors.\n\n")
 
 	b.WriteString("### PRD Content\n")

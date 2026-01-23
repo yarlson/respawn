@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/yarlson/respawn/internal/tasks"
+	"github.com/yarlson/turbine/internal/tasks"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -35,9 +35,9 @@ func setupTestRepo(t *testing.T) string {
 	err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("# Test Repo"), 0644)
 	require.NoError(t, err)
 
-	// Create .gitignore to ignore .respawn by default in setup
+	// Create .gitignore to ignore .turbine by default in setup
 	// so that its presence doesn't make the repo dirty unless we want it to.
-	err = os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(".respawn/runs/\n.respawn/state/\n"), 0644)
+	err = os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(".turbine/runs/\n.turbine/state/\n"), 0644)
 	require.NoError(t, err)
 
 	runCmd("git", "add", "README.md", ".gitignore")
@@ -59,11 +59,11 @@ func TestRunner_Preflight(t *testing.T) {
 	t.Run("dirty tree error", func(t *testing.T) {
 		repoDir := setupTestRepo(t)
 
-		// Create .respawn/tasks.yaml
-		err := os.MkdirAll(filepath.Join(repoDir, ".respawn"), 0755)
+		// Create .turbine/tasks.yaml
+		err := os.MkdirAll(filepath.Join(repoDir, ".turbine"), 0755)
 		require.NoError(t, err)
 		taskList := tasks.TaskList{Version: 1, Tasks: []tasks.Task{{ID: "T1", Status: tasks.StatusTodo}}}
-		err = taskList.Save(filepath.Join(repoDir, ".respawn", "tasks.yaml"))
+		err = taskList.Save(filepath.Join(repoDir, ".turbine", "tasks.yaml"))
 		require.NoError(t, err)
 
 		// Make it dirty with an UNTRACKED file that is NOT ignored
@@ -78,15 +78,15 @@ func TestRunner_Preflight(t *testing.T) {
 	t.Run("resume bypasses dirty check", func(t *testing.T) {
 		repoDir := setupTestRepo(t)
 
-		// Create .respawn/tasks.yaml
-		err := os.MkdirAll(filepath.Join(repoDir, ".respawn", "state"), 0755)
+		// Create .turbine/tasks.yaml
+		err := os.MkdirAll(filepath.Join(repoDir, ".turbine", "state"), 0755)
 		require.NoError(t, err)
 		taskList := tasks.TaskList{Version: 1, Tasks: []tasks.Task{{ID: "T1", Status: tasks.StatusTodo}}}
-		err = taskList.Save(filepath.Join(repoDir, ".respawn", "tasks.yaml"))
+		err = taskList.Save(filepath.Join(repoDir, ".turbine", "tasks.yaml"))
 		require.NoError(t, err)
 
 		// Create resume state
-		err = os.WriteFile(filepath.Join(repoDir, ".respawn", "state", "run.json"), []byte(`{"run_id": "test"}`), 0644)
+		err = os.WriteFile(filepath.Join(repoDir, ".turbine", "state", "run.json"), []byte(`{"run_id": "test"}`), 0644)
 		require.NoError(t, err)
 
 		// Make it dirty
@@ -105,10 +105,10 @@ func TestRunner_Preflight(t *testing.T) {
 		err := os.WriteFile(filepath.Join(repoDir, ".gitignore"), []byte(""), 0644)
 		require.NoError(t, err)
 
-		err = os.MkdirAll(filepath.Join(repoDir, ".respawn"), 0755)
+		err = os.MkdirAll(filepath.Join(repoDir, ".turbine"), 0755)
 		require.NoError(t, err)
 		taskList := tasks.TaskList{Version: 1, Tasks: []tasks.Task{{ID: "T1", Status: tasks.StatusTodo}}}
-		err = taskList.Save(filepath.Join(repoDir, ".respawn", "tasks.yaml"))
+		err = taskList.Save(filepath.Join(repoDir, ".turbine", "tasks.yaml"))
 		require.NoError(t, err)
 
 		// Commit them so the tree is clean for preflight
@@ -124,7 +124,7 @@ func TestRunner_Preflight(t *testing.T) {
 			out, err := cmd.CombinedOutput()
 			require.NoError(t, err, "failed to run %s %v: %s", name, args, string(out))
 		}
-		runCmd("git", "add", ".gitignore", ".respawn/tasks.yaml")
+		runCmd("git", "add", ".gitignore", ".turbine/tasks.yaml")
 		runCmd("git", "commit", "-m", "prepare for ignore test", "--no-gpg-sign")
 
 		// Preflight with auto-add
@@ -134,8 +134,8 @@ func TestRunner_Preflight(t *testing.T) {
 		// Verify .gitignore
 		content, err := os.ReadFile(filepath.Join(repoDir, ".gitignore"))
 		assert.NoError(t, err)
-		assert.Contains(t, string(content), ".respawn/runs/")
-		assert.Contains(t, string(content), ".respawn/state/")
+		assert.Contains(t, string(content), ".turbine/runs/")
+		assert.Contains(t, string(content), ".turbine/state/")
 	})
 }
 

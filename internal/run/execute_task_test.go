@@ -2,10 +2,10 @@ package run
 
 import (
 	"context"
-	"github.com/yarlson/respawn/internal/backends"
-	"github.com/yarlson/respawn/internal/config"
-	"github.com/yarlson/respawn/internal/state"
-	"github.com/yarlson/respawn/internal/tasks"
+	"github.com/yarlson/turbine/internal/backends"
+	"github.com/yarlson/turbine/internal/config"
+	"github.com/yarlson/turbine/internal/state"
+	"github.com/yarlson/turbine/internal/tasks"
 	"os"
 	"path/filepath"
 	"testing"
@@ -38,7 +38,7 @@ func TestExecuteTask_Success(t *testing.T) {
 	repoDir := setupTestRepo(t)
 
 	// Setup tasks.yaml
-	tasksDir := filepath.Join(repoDir, ".respawn")
+	tasksDir := filepath.Join(repoDir, ".turbine")
 	require.NoError(t, os.MkdirAll(tasksDir, 0755))
 	taskList := &tasks.TaskList{
 		Version: 1,
@@ -82,7 +82,7 @@ func TestExecuteTask_VerifyFailure(t *testing.T) {
 	repoDir := setupTestRepo(t)
 
 	// Setup tasks.yaml
-	tasksDir := filepath.Join(repoDir, ".respawn")
+	tasksDir := filepath.Join(repoDir, ".turbine")
 	require.NoError(t, os.MkdirAll(tasksDir, 0755))
 	taskList := &tasks.TaskList{
 		Version: 1,

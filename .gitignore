@@ -1,6 +1,6 @@
 /.ralph/
-.respawn/runs/
-.respawn/state/
-/.respawn/
-/respawn
+.turbine/runs/
+.turbine/state/
+/.turbine/
+/turbine
 /e2e-test/

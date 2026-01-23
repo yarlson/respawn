@@ -4,21 +4,21 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/yarlson/respawn/internal/tasks"
+	"github.com/yarlson/turbine/internal/tasks"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSystemPrompts(t *testing.T) {
 	assert.Contains(t, DecomposerSystemPrompt, "task decomposer")
-	assert.Contains(t, DecomposerSystemPrompt, ".respawn/tasks.yaml")
-	assert.Contains(t, ImplementSystemPrompt, "coding agent working within the Respawn harness")
+	assert.Contains(t, DecomposerSystemPrompt, ".turbine/tasks.yaml")
+	assert.Contains(t, ImplementSystemPrompt, "coding agent working within the Turbine harness")
 	assert.Contains(t, RetrySystemPrompt, "retry after verification failure")
 }
 
 func TestDecomposeUserPrompt(t *testing.T) {
 	prd := "Build a rocket."
-	path := ".respawn/tasks.yaml"
+	path := ".turbine/tasks.yaml"
 	prompt := DecomposeUserPrompt(prd, path)
 
 	assert.Contains(t, prompt, prd)

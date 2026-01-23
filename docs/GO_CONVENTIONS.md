@@ -18,5 +18,5 @@
 
 ## Logging
 - Use `log/slog` with consistent fields: `task_id`, `run_id`, `backend`, `session_id`, `attempt`, `cycle`, `cmd`.
-- Quiet mode for high-level progress; detailed logs to `.respawn/runs/...`.
+- Quiet mode for high-level progress; detailed logs to `.turbine/runs/...`.
 - Never log secrets or environment dumps.

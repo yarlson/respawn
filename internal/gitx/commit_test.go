@@ -38,7 +38,7 @@ func TestCommitSavePoint(t *testing.T) {
 
 	ctx := context.Background()
 	subject := "feat: initial commit"
-	footer := "Respawn: T-001"
+	footer := "Turbine: T-001"
 
 	hash, err := CommitSavePoint(ctx, tmpDir, subject, footer)
 	require.NoError(t, err)

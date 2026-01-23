@@ -7,13 +7,13 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Config represents the global configuration for respawn.
+// Config represents the global configuration for turbine.
 type Config struct {
 	Defaults Defaults           `yaml:"defaults"`
 	Backends map[string]Backend `yaml:"backends"`
 }
 
-// Defaults holds default settings for respawn.
+// Defaults holds default settings for turbine.
 type Defaults struct {
 	Backend string `yaml:"backend"`
 	Quiet   bool   `yaml:"quiet"`
@@ -64,14 +64,14 @@ func DefaultConfig() *Config {
 func ResolveConfigPath() string {
 	xdgConfig := os.Getenv("XDG_CONFIG_HOME")
 	if xdgConfig != "" {
-		return filepath.Join(xdgConfig, "respawn", "respawn.yaml")
+		return filepath.Join(xdgConfig, "turbine", "turbine.yaml")
 	}
 
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return ""
 	}
-	return filepath.Join(home, ".config", "respawn", "respawn.yaml")
+	return filepath.Join(home, ".config", "turbine", "turbine.yaml")
 }
 
 // Load loads the configuration from the global config path.

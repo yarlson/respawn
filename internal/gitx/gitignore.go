@@ -10,12 +10,12 @@ import (
 	"strings"
 )
 
-// MissingRespawnIgnores checks if the required respawn directories are ignored by git.
+// MissingTurbineIgnores checks if the required turbine directories are ignored by git.
 // It returns a slice of paths that are NOT ignored.
-func MissingRespawnIgnores(ctx context.Context, repoRoot string) ([]string, error) {
+func MissingTurbineIgnores(ctx context.Context, repoRoot string) ([]string, error) {
 	required := []string{
-		".respawn/runs/",
-		".respawn/state/",
+		".turbine/runs/",
+		".turbine/state/",
 	}
 
 	var missing []string

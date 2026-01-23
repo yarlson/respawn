@@ -1,4 +1,4 @@
-package respawn
+package turbine
 
 import (
 	"github.com/spf13/cobra"
@@ -14,9 +14,9 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "respawn",
+	Use:   "turbine",
 	Short: "Run tasks from a loaded mission",
-	Long:  `Reads tasks from .respawn/tasks.yaml and executes each one autonomously using an AI backend.`,
+	Long:  `Reads tasks from .turbine/tasks.yaml and executes each one autonomously using an AI backend.`,
 }
 
 // RootCmd returns the root cobra command.

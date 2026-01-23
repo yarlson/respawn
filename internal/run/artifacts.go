@@ -8,7 +8,7 @@ import (
 
 const (
 	// RunsDir is the base directory for all runs, relative to repo root.
-	RunsDir = ".respawn/runs"
+	RunsDir = ".turbine/runs"
 
 	// Subdirectories within a run directory.
 	SubDirPrompts = "prompts"

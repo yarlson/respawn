@@ -1,6 +1,6 @@
-# AGENTS.md — Respawn Engineering Rules
+# AGENTS.md — Turbine Engineering Rules
 
-Respawn is a minimal Go-based harness for executing autonomous tasks from `.respawn/tasks.yaml`.
+Turbine is a minimal Go-based harness for executing autonomous tasks from `.turbine/tasks.yaml`.
 
 ## Core Stack
 
@@ -9,8 +9,8 @@ Respawn is a minimal Go-based harness for executing autonomous tasks from `.resp
 
 ## Primary Commands
 
-- **Runner**: `respawn`
-- **Decomposer**: `respawn decompose --prd <path> [--yes]`
+- **Runner**: `turbine`
+- **Decomposer**: `turbine decompose --prd <path> [--yes]`
 
 ## Guidelines (Progressive Disclosure)
 

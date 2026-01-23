@@ -1,7 +1,7 @@
 # Architecture & Core Logic
 
 ## Mission
-Build a minimal, reliable harness that executes tasks autonomously from `./.respawn/tasks.yaml` and optimizes for unattended overnight operation.
+Build a minimal, reliable harness that executes tasks autonomously from `./.turbine/tasks.yaml` and optimizes for unattended overnight operation.
 
 ## Core Principles
 - **DRY / KISS / YAGNI**: Simplest correct implementation; avoid speculative abstractions.
@@ -10,9 +10,9 @@ Build a minimal, reliable harness that executes tasks autonomously from `./.resp
 
 ## Repository Structure
 - Paths are relative to repo root.
-- `.respawn/tasks.yaml` is the source of truth for tasks.
-- Run artifacts: `./.respawn/runs/` (gitignored).
-- Resume state: `./.respawn/state/` (gitignored).
+- `.turbine/tasks.yaml` is the source of truth for tasks.
+- Run artifacts: `./.turbine/runs/` (gitignored).
+- Resume state: `./.turbine/state/` (gitignored).
 
 ## Determinism & Resume
 - Persist only essentials: run id, active task id, cycle/attempt, backend session id, artifact paths.

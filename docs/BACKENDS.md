@@ -1,7 +1,7 @@
 # AI Backend Integration
 
 ## Backend Invocation
-- Binaries and arguments must be configurable in `respawn.yaml`.
+- Binaries and arguments must be configurable in `turbine.yaml`.
 - Fail with a clear message if backend is not on PATH.
 
 ## OpenCode

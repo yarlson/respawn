@@ -3,10 +3,10 @@ package run
 import (
 	"context"
 	"fmt"
-	"github.com/yarlson/respawn/internal/config"
-	"github.com/yarlson/respawn/internal/gitx"
-	"github.com/yarlson/respawn/internal/state"
-	"github.com/yarlson/respawn/internal/tasks"
+	"github.com/yarlson/turbine/internal/config"
+	"github.com/yarlson/turbine/internal/gitx"
+	"github.com/yarlson/turbine/internal/state"
+	"github.com/yarlson/turbine/internal/tasks"
 	"os"
 	"path/filepath"
 	"testing"
@@ -72,7 +72,7 @@ func TestRetryPolicy_Execute(t *testing.T) {
 		// Create a file and commit it to have a known state
 		err := os.WriteFile(filepath.Join(repoDir, "keep.txt"), []byte("keep"), 0644)
 		require.NoError(t, err)
-		hash, err := gitx.CommitSavePoint(ctx, repoDir, "save point", "Respawn: T1")
+		hash, err := gitx.CommitSavePoint(ctx, repoDir, "save point", "Turbine: T1")
 		require.NoError(t, err)
 
 		r := &Runner{

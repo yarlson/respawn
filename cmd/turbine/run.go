@@ -1,13 +1,13 @@
-package respawn
+package turbine
 
 import (
 	"fmt"
 
-	"github.com/yarlson/respawn/internal/backends"
-	"github.com/yarlson/respawn/internal/backends/claude"
-	"github.com/yarlson/respawn/internal/backends/opencode"
-	"github.com/yarlson/respawn/internal/config"
-	"github.com/yarlson/respawn/internal/run"
+	"github.com/yarlson/turbine/internal/backends"
+	"github.com/yarlson/turbine/internal/backends/claude"
+	"github.com/yarlson/turbine/internal/backends/opencode"
+	"github.com/yarlson/turbine/internal/config"
+	"github.com/yarlson/turbine/internal/run"
 
 	"github.com/spf13/cobra"
 )

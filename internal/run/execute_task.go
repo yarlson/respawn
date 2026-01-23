@@ -3,11 +3,11 @@ package run
 import (
 	"context"
 	"fmt"
-	"github.com/yarlson/respawn/internal/backends"
-	"github.com/yarlson/respawn/internal/gitx"
-	"github.com/yarlson/respawn/internal/prompt"
-	"github.com/yarlson/respawn/internal/tasks"
-	"github.com/yarlson/respawn/internal/ui"
+	"github.com/yarlson/turbine/internal/backends"
+	"github.com/yarlson/turbine/internal/gitx"
+	"github.com/yarlson/turbine/internal/prompt"
+	"github.com/yarlson/turbine/internal/tasks"
+	"github.com/yarlson/turbine/internal/ui"
 	"path/filepath"
 )
 
@@ -78,14 +78,14 @@ func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend backends.Backe
 		fmt.Printf("%s %s\n  %s\n", ui.FailureMarker(), ui.Bold(task.Title), ui.Red(fmt.Sprintf("Failed after max attempts: %v", err)))
 	}
 
-	tasksPath := filepath.Join(r.RepoRoot, ".respawn", "tasks.yaml")
+	tasksPath := filepath.Join(r.RepoRoot, ".turbine", "tasks.yaml")
 	if saveErr := r.Tasks.Save(tasksPath); saveErr != nil {
 		return fmt.Errorf("save tasks: %w", saveErr)
 	}
 
 	if err == nil {
 		// Commit changes on success
-		footer := fmt.Sprintf("Respawn: %s", task.ID)
+		footer := fmt.Sprintf("Turbine: %s", task.ID)
 		hash, commitErr := gitx.CommitSavePoint(ctx, r.RepoRoot, task.CommitMessage, footer)
 		if commitErr != nil {
 			return fmt.Errorf("commit changes: %w", commitErr)

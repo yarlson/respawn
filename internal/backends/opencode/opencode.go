@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/yarlson/respawn/internal/backends"
-	"github.com/yarlson/respawn/internal/config"
+	"github.com/yarlson/turbine/internal/backends"
+	"github.com/yarlson/turbine/internal/config"
 )
 
 type sessionInfo struct {

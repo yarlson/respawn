@@ -11,7 +11,7 @@ import (
 )
 
 func TestRunVerification(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "respawn-verify-test-*")
+	tmpDir, err := os.MkdirTemp("", "turbine-verify-test-*")
 	require.NoError(t, err)
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 

@@ -1,4 +1,4 @@
-package respawn
+package turbine
 
 import (
 	"bufio"
@@ -7,13 +7,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/yarlson/respawn/internal/backends/claude"
-	"github.com/yarlson/respawn/internal/backends/opencode"
-	"github.com/yarlson/respawn/internal/config"
-	"github.com/yarlson/respawn/internal/decomposer"
-	"github.com/yarlson/respawn/internal/gitx"
-	"github.com/yarlson/respawn/internal/run"
-	"github.com/yarlson/respawn/internal/ui"
+	"github.com/yarlson/turbine/internal/backends/claude"
+	"github.com/yarlson/turbine/internal/backends/opencode"
+	"github.com/yarlson/turbine/internal/config"
+	"github.com/yarlson/turbine/internal/decomposer"
+	"github.com/yarlson/turbine/internal/gitx"
+	"github.com/yarlson/turbine/internal/run"
+	"github.com/yarlson/turbine/internal/ui"
 
 	"github.com/spf13/cobra"
 )
@@ -25,7 +25,7 @@ var (
 var loadCmd = &cobra.Command{
 	Use:   "load",
 	Short: "Load a PRD into the mission file",
-	Long:  `Reads a PRD file and generates .respawn/tasks.yaml with executable tasks.`,
+	Long:  `Reads a PRD file and generates .turbine/tasks.yaml with executable tasks.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runLoad(cmd)
 	},
@@ -44,7 +44,7 @@ func runLoad(cmd *cobra.Command) error {
 		return err
 	}
 
-	missingIgnores, err := gitx.MissingRespawnIgnores(ctx, repoRoot)
+	missingIgnores, err := gitx.MissingTurbineIgnores(ctx, repoRoot)
 	if err != nil {
 		return err
 	}
@@ -77,7 +77,7 @@ func runLoad(cmd *cobra.Command) error {
 	}
 
 	// 3. Check if tasks.yaml exists
-	tasksPath := filepath.Join(repoRoot, ".respawn", "tasks.yaml")
+	tasksPath := filepath.Join(repoRoot, ".turbine", "tasks.yaml")
 	if _, err := os.Stat(tasksPath); err == nil {
 		if !globalYes {
 			fmt.Printf("%s exists. %s [y/N]: ", ui.Dim(tasksPath), ui.Yellow("Overwrite?"))

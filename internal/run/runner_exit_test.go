@@ -2,9 +2,9 @@ package run
 
 import (
 	"context"
-	"github.com/yarlson/respawn/internal/config"
-	"github.com/yarlson/respawn/internal/state"
-	"github.com/yarlson/respawn/internal/tasks"
+	"github.com/yarlson/turbine/internal/config"
+	"github.com/yarlson/turbine/internal/state"
+	"github.com/yarlson/turbine/internal/tasks"
 	"os"
 	"path/filepath"
 	"testing"
@@ -18,7 +18,7 @@ func TestRunner_Run_ExitCodes(t *testing.T) {
 
 	t.Run("success all tasks", func(t *testing.T) {
 		repoDir := setupTestRepo(t)
-		tasksDir := filepath.Join(repoDir, ".respawn")
+		tasksDir := filepath.Join(repoDir, ".turbine")
 		require.NoError(t, os.MkdirAll(tasksDir, 0755))
 
 		taskList := &tasks.TaskList{
@@ -68,7 +68,7 @@ func TestRunner_Run_ExitCodes(t *testing.T) {
 
 	t.Run("failure returns error", func(t *testing.T) {
 		repoDir := setupTestRepo(t)
-		tasksDir := filepath.Join(repoDir, ".respawn")
+		tasksDir := filepath.Join(repoDir, ".turbine")
 		require.NoError(t, os.MkdirAll(tasksDir, 0755))
 
 		taskList := &tasks.TaskList{

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/yarlson/respawn/internal/backends"
+	"github.com/yarlson/turbine/internal/backends"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -53,7 +53,7 @@ func TestDecompose(t *testing.T) {
 		err := d.Decompose(context.Background(), prdPath, "")
 		require.NoError(t, err)
 
-		tasksPath := filepath.Join(repoRoot, ".respawn", "tasks.yaml")
+		tasksPath := filepath.Join(repoRoot, ".turbine", "tasks.yaml")
 		assert.FileExists(t, tasksPath)
 		content, err := os.ReadFile(tasksPath)
 		require.NoError(t, err)
@@ -71,7 +71,7 @@ func TestDecompose(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 2, backend.calls)
 
-		tasksPath := filepath.Join(repoRoot, ".respawn", "tasks.yaml")
+		tasksPath := filepath.Join(repoRoot, ".turbine", "tasks.yaml")
 		assert.FileExists(t, tasksPath)
 	})
 
@@ -111,7 +111,7 @@ func TestDecompose(t *testing.T) {
 		backend := &mockBackend{outputs: []string{""}}
 
 		// Pre-create the tasks.yaml file as if the backend wrote it
-		tasksDir := filepath.Join(repoRoot, ".respawn")
+		tasksDir := filepath.Join(repoRoot, ".turbine")
 		require.NoError(t, os.MkdirAll(tasksDir, 0755))
 		validYAML := "version: 1\ntasks:\n  - id: T-001\n    title: Task 1\n    status: todo\n    description: desc\n    commit_message: 'feat: t1'\n"
 		require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "tasks.yaml"), []byte(validYAML), 0644))
@@ -120,7 +120,7 @@ func TestDecompose(t *testing.T) {
 		err := d.Decompose(context.Background(), prdPath, "")
 		require.NoError(t, err)
 
-		tasksPath := filepath.Join(repoRoot, ".respawn", "tasks.yaml")
+		tasksPath := filepath.Join(repoRoot, ".turbine", "tasks.yaml")
 		assert.FileExists(t, tasksPath)
 		content, err := os.ReadFile(tasksPath)
 		require.NoError(t, err)

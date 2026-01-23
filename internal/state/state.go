@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	stateRelPath = ".respawn/state/run.json"
+	stateRelPath = ".turbine/state/run.json"
 )
 
-// Load reads the run state from .respawn/state/run.json.
+// Load reads the run state from .turbine/state/run.json.
 func Load(repoRoot string) (*RunState, bool, error) {
 	path := filepath.Join(repoRoot, stateRelPath)
 	data, err := os.ReadFile(path)
@@ -32,7 +32,7 @@ func Load(repoRoot string) (*RunState, bool, error) {
 	return &state, true, nil
 }
 
-// Save writes the run state to .respawn/state/run.json.
+// Save writes the run state to .turbine/state/run.json.
 func Save(repoRoot string, state *RunState) error {
 	path := filepath.Join(repoRoot, stateRelPath)
 	dir := filepath.Dir(path)

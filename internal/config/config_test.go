@@ -18,7 +18,7 @@ func TestResolveConfigPath(t *testing.T) {
 		err := os.Setenv("XDG_CONFIG_HOME", tmpDir)
 		require.NoError(t, err)
 
-		expected := filepath.Join(tmpDir, "respawn", "respawn.yaml")
+		expected := filepath.Join(tmpDir, "turbine", "turbine.yaml")
 		assert.Equal(t, expected, ResolveConfigPath())
 	})
 
@@ -32,7 +32,7 @@ func TestResolveConfigPath(t *testing.T) {
 		home, err := os.UserHomeDir()
 		require.NoError(t, err)
 
-		expected := filepath.Join(home, ".config", "respawn", "respawn.yaml")
+		expected := filepath.Join(home, ".config", "turbine", "turbine.yaml")
 		assert.Equal(t, expected, ResolveConfigPath())
 	})
 }
@@ -59,7 +59,7 @@ func TestLoad(t *testing.T) {
 		err := os.Setenv("XDG_CONFIG_HOME", tmpDir)
 		require.NoError(t, err)
 
-		configDir := filepath.Join(tmpDir, "respawn")
+		configDir := filepath.Join(tmpDir, "turbine")
 		err = os.MkdirAll(configDir, 0755)
 		require.NoError(t, err)
 
@@ -77,7 +77,7 @@ backends:
     model: "claude-3-opus"
     variant: "fast"
 `
-		err = os.WriteFile(filepath.Join(configDir, "respawn.yaml"), []byte(yamlData), 0644)
+		err = os.WriteFile(filepath.Join(configDir, "turbine.yaml"), []byte(yamlData), 0644)
 		require.NoError(t, err)
 
 		cfg, err := Load()
@@ -105,11 +105,11 @@ backends:
 		err := os.Setenv("XDG_CONFIG_HOME", tmpDir)
 		require.NoError(t, err)
 
-		configDir := filepath.Join(tmpDir, "respawn")
+		configDir := filepath.Join(tmpDir, "turbine")
 		err = os.MkdirAll(configDir, 0755)
 		require.NoError(t, err)
 
-		err = os.WriteFile(filepath.Join(configDir, "respawn.yaml"), []byte("invalid: yaml: :"), 0644)
+		err = os.WriteFile(filepath.Join(configDir, "turbine.yaml"), []byte("invalid: yaml: :"), 0644)
 		require.NoError(t, err)
 
 		cfg, err := Load()

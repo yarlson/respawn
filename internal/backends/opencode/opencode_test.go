@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/yarlson/respawn/internal/backends"
-	"github.com/yarlson/respawn/internal/config"
+	"github.com/yarlson/turbine/internal/backends"
+	"github.com/yarlson/turbine/internal/config"
 )
 
 func TestBuildCommandArgs(t *testing.T) {

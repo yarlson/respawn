@@ -6,9 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/yarlson/respawn/internal/backends"
-	"github.com/yarlson/respawn/internal/prompt"
-	"github.com/yarlson/respawn/internal/tasks"
+	"github.com/yarlson/turbine/internal/backends"
+	"github.com/yarlson/turbine/internal/prompt"
+	"github.com/yarlson/turbine/internal/tasks"
 )
 
 type Backend interface {
@@ -35,7 +35,7 @@ func (d *Decomposer) Decompose(ctx context.Context, prdPath string, artifactsDir
 		return fmt.Errorf("read PRD: %w", err)
 	}
 
-	outputPath := ".respawn/tasks.yaml"
+	outputPath := ".turbine/tasks.yaml"
 	tasksPath := filepath.Join(d.RepoRoot, outputPath)
 
 	sessionID, err := d.Backend.StartSession(ctx, backends.SessionOptions{
@@ -88,7 +88,7 @@ func (d *Decomposer) Decompose(ctx context.Context, prdPath string, artifactsDir
 
 	// Ensure directory exists and save the validated taskList
 	if err := os.MkdirAll(filepath.Dir(tasksPath), 0755); err != nil {
-		return fmt.Errorf("create .respawn dir: %w", err)
+		return fmt.Errorf("create .turbine dir: %w", err)
 	}
 
 	if err := taskList.Save(tasksPath); err != nil {

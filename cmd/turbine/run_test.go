@@ -1,4 +1,4 @@
-package respawn
+package turbine
 
 import (
 	"os"
@@ -32,14 +32,14 @@ func setupRunTestRepo(t *testing.T) string {
 	err := os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("# Test Repo"), 0644)
 	require.NoError(t, err)
 
-	// Create .respawn/tasks.yaml
-	err = os.MkdirAll(filepath.Join(tmpDir, ".respawn"), 0755)
+	// Create .turbine/tasks.yaml
+	err = os.MkdirAll(filepath.Join(tmpDir, ".turbine"), 0755)
 	require.NoError(t, err)
-	err = os.WriteFile(filepath.Join(tmpDir, ".respawn", "tasks.yaml"), []byte("version: 1\ntasks: []"), 0644)
+	err = os.WriteFile(filepath.Join(tmpDir, ".turbine", "tasks.yaml"), []byte("version: 1\ntasks: []"), 0644)
 	require.NoError(t, err)
 
-	// Create .gitignore to ignore .respawn stuff
-	err = os.WriteFile(filepath.Join(tmpDir, ".gitignore"), []byte(".respawn/runs/\n.respawn/state/\n"), 0644)
+	// Create .gitignore to ignore .turbine stuff
+	err = os.WriteFile(filepath.Join(tmpDir, ".gitignore"), []byte(".turbine/runs/\n.turbine/state/\n"), 0644)
 	require.NoError(t, err)
 
 	runCmd("git", "add", ".")

@@ -10,7 +10,7 @@ import (
 )
 
 func TestStateRoundtrip(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "respawn-state-test-*")
+	tmpDir, err := os.MkdirTemp("", "turbine-state-test-*")
 	require.NoError(t, err)
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
@@ -42,7 +42,7 @@ func TestStateRoundtrip(t *testing.T) {
 	assert.Equal(t, expected, actual)
 
 	// 4. Verify file existence
-	statePath := filepath.Join(tmpDir, ".respawn", "state", "run.json")
+	statePath := filepath.Join(tmpDir, ".turbine", "state", "run.json")
 	assert.FileExists(t, statePath)
 
 	// 5. Clear state
@@ -58,7 +58,7 @@ func TestStateRoundtrip(t *testing.T) {
 }
 
 func TestClearNonExistent(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "respawn-state-clear-test-*")
+	tmpDir, err := os.MkdirTemp("", "turbine-state-clear-test-*")
 	require.NoError(t, err)
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 

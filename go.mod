@@ -1,4 +1,4 @@
-module github.com/yarlson/respawn
+module github.com/yarlson/turbine
 
 go 1.25.5
 

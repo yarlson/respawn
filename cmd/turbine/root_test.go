@@ -1,4 +1,4 @@
-package respawn
+package turbine
 
 import (
 	"testing"
@@ -8,6 +8,6 @@ import (
 
 func TestRootCmd(t *testing.T) {
 	cmd := RootCmd()
-	assert.Equal(t, "respawn", cmd.Use)
+	assert.Equal(t, "turbine", cmd.Use)
 	assert.NotNil(t, cmd)
 }

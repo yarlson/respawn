@@ -6,12 +6,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/yarlson/respawn/internal/backends"
-	"github.com/yarlson/respawn/internal/config"
-	"github.com/yarlson/respawn/internal/gitx"
-	"github.com/yarlson/respawn/internal/state"
-	"github.com/yarlson/respawn/internal/tasks"
-	"github.com/yarlson/respawn/internal/ui"
+	"github.com/yarlson/turbine/internal/backends"
+	"github.com/yarlson/turbine/internal/config"
+	"github.com/yarlson/turbine/internal/gitx"
+	"github.com/yarlson/turbine/internal/state"
+	"github.com/yarlson/turbine/internal/tasks"
+	"github.com/yarlson/turbine/internal/ui"
 )
 
 type Runner struct {
@@ -43,8 +43,8 @@ func NewRunner(ctx context.Context, cfg Config) (*Runner, error) {
 		return nil, fmt.Errorf("determine repo root: %w", err)
 	}
 
-	// tasks.yaml presence - check this early as it defines if we are in a respawn context
-	tasksPath := filepath.Join(repoRoot, ".respawn", "tasks.yaml")
+	// tasks.yaml presence - check this early as it defines if we are in a turbine context
+	tasksPath := filepath.Join(repoRoot, ".turbine", "tasks.yaml")
 	if _, err := os.Stat(tasksPath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("mission file not found: %s", tasksPath)
 	}
@@ -79,7 +79,7 @@ func NewRunner(ctx context.Context, cfg Config) (*Runner, error) {
 	}
 
 	// .gitignore check
-	missing, err := gitx.MissingRespawnIgnores(ctx, repoRoot)
+	missing, err := gitx.MissingTurbineIgnores(ctx, repoRoot)
 	if err != nil {
 		return nil, fmt.Errorf("check .gitignore: %w", err)
 	}

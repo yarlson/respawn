@@ -1,4 +1,4 @@
-package respawn
+package turbine
 
 import (
 	"bytes"
@@ -18,8 +18,8 @@ func setupTestRepo(t *testing.T) string {
 	cmd.Dir = tmpDir
 	require.NoError(t, cmd.Run())
 
-	// Create .respawn/runs to avoid errors
-	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".respawn", "runs"), 0755))
+	// Create .turbine/runs to avoid errors
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".turbine", "runs"), 0755))
 
 	// Move to tmpDir for the duration of the test
 	oldCwd, err := os.Getwd()

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/yarlson/respawn/internal/app"
+	"github.com/yarlson/turbine/internal/app"
 )
 
 func main() {

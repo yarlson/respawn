@@ -1,8 +1,8 @@
-# Respawn
+# Turbine
 
-Respawn is a Go-based CLI that autonomously drives coding agents through a resilient "Decompose → Execute → Verify → Commit" loop to implement a PRD end-to-end without human interaction.
+Turbine is a Go-based CLI that autonomously drives coding agents through a resilient "Decompose → Execute → Verify → Commit" loop to implement a PRD end-to-end without human interaction.
 
-- **Autonomous task execution** - Reads tasks from `.respawn/tasks.yaml` and executes them
+- **Autonomous task execution** - Reads tasks from `.turbine/tasks.yaml` and executes them
 - **PRD decomposition** - Breaks down PRD files into actionable tasks
 - **Multiple backend support** - Works with Claude and OpenCode agents
 - **Resilient execution** - Implements retry/reset policies for reliable task completion
@@ -11,25 +11,25 @@ Respawn is a Go-based CLI that autonomously drives coding agents through a resil
 ## Install
 
 ```bash
-go install github.com/yarlson/respawn@latest
+go install github.com/yarlson/turbine@latest
 ```
 
 Or build from source:
 
 ```bash
-go build -o respawn .
+go build -o turbine .
 ```
 
 ## Quickstart
 
-1. Create a configuration file at `~/.config/respawn/respawn.yaml`
+1. Create a configuration file at `~/.config/turbine/turbine.yaml`
 2. Decompose your PRD into tasks:
    ```bash
-   respawn decompose --prd path/to/your-prd.md
+   turbine decompose --prd path/to/your-prd.md
    ```
 3. Run the tasks:
    ```bash
-   respawn
+   turbine
    ```
 
 ## Usage
@@ -37,18 +37,18 @@ go build -o respawn .
 ### Run Tasks Autonomously
 
 ```bash
-respawn [flags]
+turbine [flags]
 ```
 
-Reads tasks from `.respawn/tasks.yaml` and executes them using the configured backend.
+Reads tasks from `.turbine/tasks.yaml` and executes them using the configured backend.
 
 ### Decompose PRD into Tasks
 
 ```bash
-respawn decompose --prd <path> [flags]
+turbine decompose --prd <path> [flags]
 ```
 
-Takes a PRD file and breaks it down into actionable tasks in `.respawn/tasks.yaml`.
+Takes a PRD file and breaks it down into actionable tasks in `.turbine/tasks.yaml`.
 
 ### Flags
 
@@ -67,8 +67,8 @@ Takes a PRD file and breaks it down into actionable tasks in `.respawn/tasks.yam
 
 Global configuration is stored at:
 
-- `~/.config/respawn/respawn.yaml`
-- or `${XDG_CONFIG_HOME}/respawn/respawn.yaml`
+- `~/.config/turbine/turbine.yaml`
+- or `${XDG_CONFIG_HOME}/turbine/turbine.yaml`
 
 | Variable          | Required | Description                       |
 | ----------------- | -------- | --------------------------------- |
@@ -78,21 +78,21 @@ Global configuration is stored at:
 
 Task definitions are stored at:
 
-- `./.respawn/tasks.yaml` (tracked in git)
+- `./.turbine/tasks.yaml` (tracked in git)
 
 ### Run Artifacts
 
 Execution logs and state are stored under:
 
-- `./.respawn/runs/` (gitignored)
-- `./.respawn/state/` (gitignored)
+- `./.turbine/runs/` (gitignored)
+- `./.turbine/state/` (gitignored)
 
 ## Troubleshooting
 
 | Symptom                                        | Solution                                                                                                                                                             |
 | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Task execution may fail during agent execution | Respawn implements 3x3 retry/reset policy: same-session retries and new-session resets. Check `cmd/respawn/run.go` and `internal/run/retryandresume.go` for details. |
-| State persistence across restarts              | `.respawn/state/` is used for resume information (gitignored), `.respawn/runs/` for artifacts.                                                                       |
+| Task execution may fail during agent execution | Turbine implements 3x3 retry/reset policy: same-session retries and new-session resets. Check `cmd/turbine/run.go` and `internal/run/retryandresume.go` for details. |
+| State persistence across restarts              | `.turbine/state/` is used for resume information (gitignored), `.turbine/runs/` for artifacts.                                                                       |
 
 ## Development
 
@@ -103,7 +103,7 @@ Execution logs and state are stored under:
 ### Build
 
 ```bash
-go build -o respawn .
+go build -o turbine .
 ```
 
 ### Test

@@ -19,8 +19,8 @@
 - Commits created only after verification gates pass.
 - Format:
   - Subject: from `commit_message` in tasks.yaml
-  - Footer: exactly `Respawn: T-001`
+  - Footer: exactly `Turbine: T-001`
 
 ## .gitignore Handling
-- Ensure `.respawn/runs/` and `.respawn/state/` are ignored.
+- Ensure `.turbine/runs/` and `.turbine/state/` are ignored.
 - Update `.gitignore` idempotently: append missing lines only, preserve newline at EOF.
