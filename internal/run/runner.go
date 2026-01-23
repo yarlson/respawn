@@ -46,7 +46,7 @@ func NewRunner(ctx context.Context, cfg Config) (*Runner, error) {
 	// tasks.yaml presence - check this early as it defines if we are in a turbine context
 	tasksPath := filepath.Join(repoRoot, ".turbine", "tasks.yaml")
 	if _, err := os.Stat(tasksPath); os.IsNotExist(err) {
-		return nil, fmt.Errorf("mission file not found: %s", tasksPath)
+		return nil, fmt.Errorf("task manifest not found: %s", tasksPath)
 	}
 
 	taskList, err := tasks.Load(tasksPath)
@@ -173,7 +173,7 @@ func (r *Runner) Run(ctx context.Context, backend backends.Backend) error {
 		// Ensure we don't try to resume multiple times if we're in the loop
 		r.Resume = false
 
-		// ExecuteTask handles its own retries/cycles and saves tasks.yaml
+		// ExecuteTask handles its own retries/rotations and saves tasks.yaml
 		_ = r.ExecuteTaskWithTask(ctx, backend, task)
 	}
 

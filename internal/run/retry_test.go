@@ -18,15 +18,15 @@ import (
 func TestRetryPolicy_Execute(t *testing.T) {
 	ctx := context.Background()
 
-	t.Run("success on first attempt", func(t *testing.T) {
+	t.Run("success on first stroke", func(t *testing.T) {
 		repoDir := setupTestRepo(t)
 		r := &Runner{
 			RepoRoot: repoDir,
 			State:    &state.RunState{RunID: "test-run"},
-			Config:   config.Defaults{Retry: config.Retry{Attempts: 3, Cycles: 3}},
+			Config:   config.Defaults{Retry: config.Retry{Strokes: 3, Rotations: 3}},
 		}
 		task := &tasks.Task{ID: "T1", Status: tasks.StatusTodo}
-		policy := &RetryPolicy{MaxAttempts: 3, MaxCycles: 3}
+		policy := &RetryPolicy{MaxStrokes: 3, MaxRotations: 3}
 
 		calls := 0
 		err := policy.Execute(ctx, r, task, func(ctx context.Context, sessionID string) error {
@@ -36,8 +36,8 @@ func TestRetryPolicy_Execute(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, 1, calls)
-		assert.Equal(t, 1, r.State.Attempt)
-		assert.Equal(t, 1, r.State.Cycle)
+		assert.Equal(t, 1, r.State.Stroke)
+		assert.Equal(t, 1, r.State.Rotation)
 	})
 
 	t.Run("retry same session until success", func(t *testing.T) {
@@ -45,11 +45,11 @@ func TestRetryPolicy_Execute(t *testing.T) {
 		r := &Runner{
 			RepoRoot: repoDir,
 			State:    &state.RunState{RunID: "test-run", BackendSessionID: "s1"},
-			Config:   config.Defaults{Retry: config.Retry{Attempts: 3, Cycles: 3}},
+			Config:   config.Defaults{Retry: config.Retry{Strokes: 3, Rotations: 3}},
 		}
 		// Policy will initialize state because ActiveTaskID is empty
 		task := &tasks.Task{ID: "T1", Status: tasks.StatusTodo}
-		policy := &RetryPolicy{MaxAttempts: 3, MaxCycles: 3}
+		policy := &RetryPolicy{MaxStrokes: 3, MaxRotations: 3}
 
 		calls := 0
 		err := policy.Execute(ctx, r, task, func(ctx context.Context, sessionID string) error {
@@ -62,11 +62,11 @@ func TestRetryPolicy_Execute(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, 3, calls)
-		assert.Equal(t, 3, r.State.Attempt)
-		assert.Equal(t, 1, r.State.Cycle)
+		assert.Equal(t, 3, r.State.Stroke)
+		assert.Equal(t, 1, r.State.Rotation)
 	})
 
-	t.Run("reset and new session after attempts exhausted", func(t *testing.T) {
+	t.Run("reset and new session after strokes exhausted", func(t *testing.T) {
 		repoDir := setupTestRepo(t)
 
 		// Create a file and commit it to have a known state
@@ -78,16 +78,16 @@ func TestRetryPolicy_Execute(t *testing.T) {
 		r := &Runner{
 			RepoRoot: repoDir,
 			State:    &state.RunState{RunID: "test-run", BackendSessionID: "s1", LastSavepointCommit: hash},
-			Config:   config.Defaults{Retry: config.Retry{Attempts: 2, Cycles: 2}},
+			Config:   config.Defaults{Retry: config.Retry{Strokes: 2, Rotations: 2}},
 		}
 		task := &tasks.Task{ID: "T1", Status: tasks.StatusTodo}
-		policy := &RetryPolicy{MaxAttempts: 2, MaxCycles: 2}
+		policy := &RetryPolicy{MaxStrokes: 2, MaxRotations: 2}
 
 		calls := 0
 		err = policy.Execute(ctx, r, task, func(ctx context.Context, sessionID string) error {
 			calls++
-			// On attempt 1 and 2, session is s1 (first call it was initialized, but s1 was kept)
-			// On attempt 3 (cycle 2, attempt 1), session is empty
+			// On stroke 1 and 2, session is s1 (first call it was initialized, but s1 was kept)
+			// On stroke 3 (rotation 2, stroke 1), session is empty
 			if calls <= 2 {
 				// The first call might have sessionID="s1" because it was in r.State.BackendSessionID
 				// But RetryPolicy doesn't clear it on initialization.
@@ -108,19 +108,19 @@ func TestRetryPolicy_Execute(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, 3, calls)
-		assert.Equal(t, 1, r.State.Attempt)
-		assert.Equal(t, 2, r.State.Cycle)
+		assert.Equal(t, 1, r.State.Stroke)
+		assert.Equal(t, 2, r.State.Rotation)
 	})
 
-	t.Run("exhaust all cycles and fail", func(t *testing.T) {
+	t.Run("exhaust all rotations and fail", func(t *testing.T) {
 		repoDir := setupTestRepo(t)
 		r := &Runner{
 			RepoRoot: repoDir,
 			State:    &state.RunState{RunID: "test-run"},
-			Config:   config.Defaults{Retry: config.Retry{Attempts: 2, Cycles: 2}},
+			Config:   config.Defaults{Retry: config.Retry{Strokes: 2, Rotations: 2}},
 		}
 		task := &tasks.Task{ID: "T1", Status: tasks.StatusTodo}
-		policy := &RetryPolicy{MaxAttempts: 2, MaxCycles: 2}
+		policy := &RetryPolicy{MaxStrokes: 2, MaxRotations: 2}
 
 		calls := 0
 		err := policy.Execute(ctx, r, task, func(ctx context.Context, sessionID string) error {

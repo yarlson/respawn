@@ -17,6 +17,6 @@
 - Ensure cancellation is honored and logged at INFO.
 
 ## Logging
-- Use `log/slog` with consistent fields: `task_id`, `run_id`, `backend`, `session_id`, `attempt`, `cycle`, `cmd`.
+- Use `log/slog` with consistent fields: `task_id`, `run_id`, `backend`, `session_id`, `stroke`, `rotation`, `cmd`.
 - Quiet mode for high-level progress; detailed logs to `.turbine/runs/...`.
 - Never log secrets or environment dumps.

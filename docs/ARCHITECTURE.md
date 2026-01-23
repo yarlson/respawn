@@ -1,6 +1,6 @@
 # Architecture & Core Logic
 
-## Mission
+## Overview
 Build a minimal, reliable harness that executes tasks autonomously from `./.turbine/tasks.yaml` and optimizes for unattended overnight operation.
 
 ## Core Principles
@@ -15,6 +15,6 @@ Build a minimal, reliable harness that executes tasks autonomously from `./.turb
 - Resume state: `./.turbine/state/` (gitignored).
 
 ## Determinism & Resume
-- Persist only essentials: run id, active task id, cycle/attempt, backend session id, artifact paths.
+- Persist only essentials: run id, active task id, rotation/stroke, backend session id, artifact paths.
 - Resume must be robust across restarts; if session resume fails, start new session but continue task.
 - Never mutate `tasks.yaml` beyond the `status` field.

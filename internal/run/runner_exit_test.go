@@ -48,7 +48,7 @@ func TestRunner_Run_ExitCodes(t *testing.T) {
 			RepoRoot: repoDir,
 			Tasks:    taskList,
 			State:    &state.RunState{RunID: "test-run"},
-			Config:   config.Defaults{Retry: config.Retry{Attempts: 1, Cycles: 1}},
+			Config:   config.Defaults{Retry: config.Retry{Strokes: 1, Rotations: 1}},
 		}
 
 		mock := &mockBackend{}
@@ -89,7 +89,7 @@ func TestRunner_Run_ExitCodes(t *testing.T) {
 			RepoRoot: repoDir,
 			Tasks:    taskList,
 			State:    &state.RunState{RunID: "test-run"},
-			Config:   config.Defaults{Retry: config.Retry{Attempts: 1, Cycles: 1}},
+			Config:   config.Defaults{Retry: config.Retry{Strokes: 1, Rotations: 1}},
 		}
 
 		mock := &mockBackend{}

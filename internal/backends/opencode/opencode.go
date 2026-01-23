@@ -97,7 +97,7 @@ func (b *OpenCode) buildCommandArgs(info *sessionInfo) ([]string, string) {
 	}
 
 	// Session handling: New task starts without -c/--continue.
-	// Retry in same cycle (indicated by hasStarted) re-uses session.
+	// Retry in same rotation (indicated by hasStarted) re-uses session.
 	var warning string
 	if info.hasStarted {
 		if info.externalSessionID != "" {

@@ -11,16 +11,16 @@ import (
 
 // RetryPolicy manages the lifecycle of a task execution with retries and resets.
 type RetryPolicy struct {
-	MaxAttempts int
-	MaxCycles   int
+	MaxStrokes   int
+	MaxRotations int
 }
 
 func (p *RetryPolicy) Execute(ctx context.Context, r *Runner, task *tasks.Task, execute func(ctx context.Context, sessionID string) error) error {
 	// Initialize or resume state
 	if r.State.ActiveTaskID != task.ID {
 		r.State.ActiveTaskID = task.ID
-		r.State.Cycle = 1
-		r.State.Attempt = 1
+		r.State.Rotation = 1
+		r.State.Stroke = 1
 		// Store last save point if not already set
 		if r.State.LastSavepointCommit == "" {
 			hash, err := gitx.CurrentHash(ctx, r.RepoRoot)
@@ -34,9 +34,9 @@ func (p *RetryPolicy) Execute(ctx context.Context, r *Runner, task *tasks.Task, 
 		}
 	}
 
-	for r.State.Cycle <= p.MaxCycles {
-		for r.State.Attempt <= p.MaxAttempts {
-			fmt.Printf("  %s Attempt %d/%d (cycle %d)\n", ui.InProgressMarker(), r.State.Attempt, p.MaxAttempts, r.State.Cycle)
+	for r.State.Rotation <= p.MaxRotations {
+		for r.State.Stroke <= p.MaxStrokes {
+			fmt.Printf("  %s Stroke %d/%d (rotation %d)\n", ui.InProgressMarker(), r.State.Stroke, p.MaxStrokes, r.State.Rotation)
 
 			err := execute(ctx, r.State.BackendSessionID)
 			if err == nil {
@@ -44,10 +44,10 @@ func (p *RetryPolicy) Execute(ctx context.Context, r *Runner, task *tasks.Task, 
 				return nil
 			}
 
-			fmt.Printf("  %s %v\n", ui.FailureMarker(), ui.Dim(fmt.Sprintf("Attempt failed: %v", err)))
+			fmt.Printf("  %s %v\n", ui.FailureMarker(), ui.Dim(fmt.Sprintf("Stroke failed: %v", err)))
 
-			if r.State.Attempt < p.MaxAttempts {
-				r.State.Attempt++
+			if r.State.Stroke < p.MaxStrokes {
+				r.State.Stroke++
 				if err := state.Save(r.RepoRoot, r.State); err != nil {
 					return err
 				}
@@ -56,14 +56,14 @@ func (p *RetryPolicy) Execute(ctx context.Context, r *Runner, task *tasks.Task, 
 			}
 		}
 
-		// Cycle exhausted, increment cycle and reset
-		if r.State.Cycle < p.MaxCycles {
-			r.State.Cycle++
-			fmt.Printf("  %s Cycle %d failed. Turbineing at %s\n", ui.Yellow("⟳"), r.State.Cycle-1, ui.Dim(r.State.LastSavepointCommit[:8]))
+		// Rotation exhausted, increment rotation and reset
+		if r.State.Rotation < p.MaxRotations {
+			r.State.Rotation++
+			fmt.Printf("  %s Rotation %d failed. Re-spinning at %s\n", ui.Yellow("⟳"), r.State.Rotation-1, ui.Dim(r.State.LastSavepointCommit[:8]))
 			if err := gitx.ResetHard(ctx, r.RepoRoot, r.State.LastSavepointCommit); err != nil {
 				return fmt.Errorf("reset to savepoint: %w", err)
 			}
-			r.State.Attempt = 1
+			r.State.Stroke = 1
 			r.State.BackendSessionID = "" // Force new session
 			if err := state.Save(r.RepoRoot, r.State); err != nil {
 				return err
@@ -73,7 +73,7 @@ func (p *RetryPolicy) Execute(ctx context.Context, r *Runner, task *tasks.Task, 
 		}
 	}
 
-	// All cycles exhausted
+	// All rotations exhausted
 	task.Status = tasks.StatusFailed
-	return fmt.Errorf("%s failed after %d lives", task.ID, p.MaxCycles)
+	return fmt.Errorf("%s failed after %d rotations", task.ID, p.MaxRotations)
 }

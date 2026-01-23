@@ -24,7 +24,7 @@ var (
 
 var loadCmd = &cobra.Command{
 	Use:   "load",
-	Short: "Load a PRD into the mission file",
+	Short: "Load a PRD into the task manifest",
 	Long:  `Reads a PRD file and generates .turbine/tasks.yaml with executable tasks.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runLoad(cmd)

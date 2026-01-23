@@ -68,8 +68,8 @@ defaults:
   backend: "claude"
   quiet: true
   retry:
-    cycles: 5
-    attempts: 10
+    rotations: 5
+    strokes: 10
 backends:
   opencode:
     command: "custom-opencode"
@@ -85,8 +85,8 @@ backends:
 
 		assert.Equal(t, "claude", cfg.Defaults.Backend)
 		assert.True(t, cfg.Defaults.Quiet)
-		assert.Equal(t, 5, cfg.Defaults.Retry.Cycles)
-		assert.Equal(t, 10, cfg.Defaults.Retry.Attempts)
+		assert.Equal(t, 5, cfg.Defaults.Retry.Rotations)
+		assert.Equal(t, 10, cfg.Defaults.Retry.Strokes)
 
 		assert.Equal(t, "custom-opencode", cfg.Backends["opencode"].Command)
 		assert.Equal(t, []string{"--debug"}, cfg.Backends["opencode"].Args)

@@ -22,8 +22,8 @@ type Defaults struct {
 
 // Retry holds retry configuration.
 type Retry struct {
-	Cycles   int `yaml:"cycles"`
-	Attempts int `yaml:"attempts"`
+	Rotations int `yaml:"rotations"`
+	Strokes   int `yaml:"strokes"`
 }
 
 // Backend holds configuration for a specific agent backend.
@@ -41,8 +41,8 @@ func DefaultConfig() *Config {
 			Backend: "opencode",
 			Quiet:   false,
 			Retry: Retry{
-				Cycles:   3,
-				Attempts: 3,
+				Rotations: 3,
+				Strokes:   3,
 			},
 		},
 		Backends: map[string]Backend{

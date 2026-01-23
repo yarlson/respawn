@@ -23,11 +23,11 @@ go build -o turbine .
 ## Quickstart
 
 1. Create a configuration file at `~/.config/turbine/turbine.yaml`
-2. Decompose your PRD into tasks:
+2. Load your PRD into the task manifest:
    ```bash
-   turbine decompose --prd path/to/your-prd.md
+   turbine load --prd path/to/your-prd.md
    ```
-3. Run the tasks:
+3. Spin up the turbine:
    ```bash
    turbine
    ```
@@ -42,10 +42,10 @@ turbine [flags]
 
 Reads tasks from `.turbine/tasks.yaml` and executes them using the configured backend.
 
-### Decompose PRD into Tasks
+### Load PRD into Task Manifest
 
 ```bash
-turbine decompose --prd <path> [flags]
+turbine load --prd <path> [flags]
 ```
 
 Takes a PRD file and breaks it down into actionable tasks in `.turbine/tasks.yaml`.
@@ -89,10 +89,10 @@ Execution logs and state are stored under:
 
 ## Troubleshooting
 
-| Symptom                                        | Solution                                                                                                                                                             |
-| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Task execution may fail during agent execution | Turbine implements 3x3 retry/reset policy: same-session retries and new-session resets. Check `cmd/turbine/run.go` and `internal/run/retryandresume.go` for details. |
-| State persistence across restarts              | `.turbine/state/` is used for resume information (gitignored), `.turbine/runs/` for artifacts.                                                                       |
+| Symptom                                        | Solution                                                                                                                                                           |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Task execution may fail during agent execution | Turbine implements 3x3 rotation/stroke policy: same-session strokes and new-session rotations. Check `cmd/turbine/run.go` and `internal/run/retry.go` for details. |
+| State persistence across restarts              | `.turbine/state/` is used for resume information (gitignored), `.turbine/runs/` for artifacts.                                                                     |
 
 ## Development
 

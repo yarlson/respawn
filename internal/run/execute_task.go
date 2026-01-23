@@ -25,8 +25,8 @@ func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend backends.Backe
 	fmt.Printf("%s %s\n", ui.Section("›", ui.Bold(task.Title)), ui.Dim(fmt.Sprintf("[%s]", task.ID)))
 
 	policy := &RetryPolicy{
-		MaxAttempts: r.Config.Retry.Attempts,
-		MaxCycles:   r.Config.Retry.Cycles,
+		MaxStrokes:   r.Config.Retry.Strokes,
+		MaxRotations: r.Config.Retry.Rotations,
 	}
 
 	// Artifacts setup
@@ -75,7 +75,7 @@ func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend backends.Backe
 		task.Status = tasks.StatusDone
 	} else {
 		// policy.Execute already sets task.Status = tasks.StatusFailed on exhaustion
-		fmt.Printf("%s %s\n  %s\n", ui.FailureMarker(), ui.Bold(task.Title), ui.Red(fmt.Sprintf("Failed after max attempts: %v", err)))
+		fmt.Printf("%s %s\n  %s\n", ui.FailureMarker(), ui.Bold(task.Title), ui.Red(fmt.Sprintf("Failed after max rotations: %v", err)))
 	}
 
 	tasksPath := filepath.Join(r.RepoRoot, ".turbine", "tasks.yaml")

@@ -15,7 +15,7 @@ var (
 
 var rootCmd = &cobra.Command{
 	Use:   "turbine",
-	Short: "Run tasks from a loaded mission",
+	Short: "Spin up and execute the task manifest",
 	Long:  `Reads tasks from .turbine/tasks.yaml and executes each one autonomously using an AI backend.`,
 }
 

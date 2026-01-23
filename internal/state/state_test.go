@@ -17,8 +17,8 @@ func TestStateRoundtrip(t *testing.T) {
 	expected := &RunState{
 		RunID:               "run-123",
 		ActiveTaskID:        "task-456",
-		Cycle:               1,
-		Attempt:             2,
+		Rotation:            1,
+		Stroke:              2,
 		BackendName:         "opencode",
 		BackendSessionID:    "sess-789",
 		LastSavepointCommit: "abc123def",

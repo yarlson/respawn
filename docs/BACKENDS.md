@@ -6,8 +6,8 @@
 
 ## OpenCode
 - New task → new session.
-- Retry-in-cycle → same session (`--continue`/`--session`).
-- Reset cycle → new session.
+- Retry-in-rotation → same session (`--continue`/`--session`).
+- Reset rotation → new session.
 - `--variant` applies only to OpenCode.
 
 ## Claude Code
