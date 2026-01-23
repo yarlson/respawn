@@ -132,13 +132,16 @@ func runDecompose(cmd *cobra.Command) error {
 	}
 
 	d := decomposer.New(backend, repoRoot)
-	spinner := ui.NewSpinner()
-	fmt.Printf("%s\n", spinner.Message(fmt.Sprintf("Generating tasks from %s (%s)...", ui.Dim(prdPath), ui.Dim(backendName))))
+	spinner := ui.NewSpinner(fmt.Sprintf("Generating tasks from %s (%s)...", prdPath, backendName))
+	cancel := spinner.Start(ctx)
+	defer cancel()
+
 	if err := d.Decompose(ctx, prdPath, artifacts.Root()); err != nil {
+		spinner.Fail(fmt.Sprintf("Failed: %v", err))
 		return err
 	}
 
-	fmt.Printf("%s %s %s\n", ui.SuccessMarker(), ui.Bold("Created"), ui.Dim(fmt.Sprintf("%s (run %s)", tasksPath, runID)))
+	spinner.Stop(fmt.Sprintf("Created %s (run %s)", tasksPath, runID))
 	return nil
 }
 
