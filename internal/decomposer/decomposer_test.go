@@ -6,37 +6,43 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/yarlson/turbine/internal/backends"
+	relay "github.com/yarlson/relay"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // mockBackend simulates a coding agent that writes files directly.
-type mockBackend struct {
-	// writeFile is called on each Send to simulate the backend writing a file
+type mockProvider struct {
 	writeFile func(repoRoot string, call int) error
 	repoRoot  string
 	calls     int
-	sendErr   error
+	runErr    error
 }
 
-func (m *mockBackend) StartSession(ctx context.Context, opts backends.SessionOptions) (string, error) {
-	m.repoRoot = opts.WorkingDir
-	return "mock-session", nil
-}
+func (m *mockProvider) Name() string { return "mock" }
 
-func (m *mockBackend) Send(ctx context.Context, sessionID string, prompt string, opts backends.SendOptions) (*backends.Result, error) {
-	if m.sendErr != nil {
-		return nil, m.sendErr
+func (m *mockProvider) Run(ctx context.Context, params relay.RunParams, events chan<- relay.Event) error {
+	_ = ctx
+	defer close(events)
+	if m.repoRoot == "" {
+		m.repoRoot = params.WorkingDir
+	}
+	if m.runErr != nil {
+		return m.runErr
 	}
 	if m.writeFile != nil {
 		if err := m.writeFile(m.repoRoot, m.calls); err != nil {
-			return nil, err
+			return err
 		}
 	}
 	m.calls++
-	return &backends.Result{Output: ""}, nil
+	return nil
+}
+
+func (m *mockProvider) Resume(ctx context.Context, sessionID string, params relay.RunParams, events chan<- relay.Event) error {
+	_ = sessionID
+	return m.Run(ctx, params, events)
 }
 
 func TestDecompose(t *testing.T) {
@@ -81,7 +87,7 @@ tasks:
 
 	t.Run("successful decomposition - backend writes valid file", func(t *testing.T) {
 		repoRoot, prdPath := setupTempDir(t)
-		backend := &mockBackend{
+		backend := &mockProvider{
 			writeFile: func(root string, call int) error {
 				// call 0 = exploration (no file written)
 				// call 1 = task generation
@@ -106,7 +112,7 @@ tasks:
 
 	t.Run("successful retry - backend fixes file on second attempt", func(t *testing.T) {
 		repoRoot, prdPath := setupTempDir(t)
-		backend := &mockBackend{
+		backend := &mockProvider{
 			writeFile: func(root string, call int) error {
 				// call 0 = exploration
 				// call 1 = first generation attempt (invalid)
@@ -132,7 +138,7 @@ tasks:
 
 	t.Run("fail after max retries - backend keeps writing invalid file", func(t *testing.T) {
 		repoRoot, prdPath := setupTempDir(t)
-		backend := &mockBackend{
+		backend := &mockProvider{
 			writeFile: func(root string, call int) error {
 				if call >= 1 { // all generation attempts write invalid
 					return writeTasksFile(root, invalidYAML)
@@ -150,7 +156,7 @@ tasks:
 
 	t.Run("fail - backend never creates file", func(t *testing.T) {
 		repoRoot, prdPath := setupTempDir(t)
-		backend := &mockBackend{
+		backend := &mockProvider{
 			writeFile: func(root string, call int) error {
 				// Backend doesn't write the file
 				return nil
@@ -165,7 +171,7 @@ tasks:
 
 	t.Run("fail - backend writes empty file", func(t *testing.T) {
 		repoRoot, prdPath := setupTempDir(t)
-		backend := &mockBackend{
+		backend := &mockProvider{
 			writeFile: func(root string, call int) error {
 				if call >= 1 {
 					return writeTasksFile(root, "")
@@ -182,7 +188,7 @@ tasks:
 
 	t.Run("missing PRD file", func(t *testing.T) {
 		repoRoot, _ := setupTempDir(t)
-		backend := &mockBackend{}
+		backend := &mockProvider{}
 		d := New(backend, repoRoot)
 		err := d.Decompose(context.Background(), "non-existent.md", opts)
 		assert.Error(t, err)

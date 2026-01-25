@@ -16,7 +16,7 @@ type RetryPolicy struct {
 	MaxRotations int
 }
 
-func (p *RetryPolicy) Execute(ctx context.Context, r *Runner, task *tasks.Task, execute func(ctx context.Context, sessionID string) error) error {
+func (p *RetryPolicy) Execute(ctx context.Context, r *Runner, task *tasks.Task, execute func(ctx context.Context) error) error {
 	// Initialize or resume state
 	if r.State.ActiveTaskID != task.ID {
 		r.State.ActiveTaskID = task.ID
@@ -39,7 +39,7 @@ func (p *RetryPolicy) Execute(ctx context.Context, r *Runner, task *tasks.Task, 
 		for r.State.Stroke <= p.MaxStrokes {
 			fmt.Printf("  %s Stroke %d/%d (rotation %d)\n", ui.InProgressMarker(), r.State.Stroke, p.MaxStrokes, r.State.Rotation)
 
-			err := execute(ctx, r.State.BackendSessionID)
+			err := execute(ctx)
 			if err == nil {
 				// Success!
 				return nil

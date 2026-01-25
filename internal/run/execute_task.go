@@ -5,16 +5,17 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/yarlson/turbine/internal/backends"
+	relay "github.com/yarlson/relay"
 	"github.com/yarlson/turbine/internal/gitx"
 	"github.com/yarlson/turbine/internal/prompt"
 	"github.com/yarlson/turbine/internal/prompt/roles"
+	relaystore "github.com/yarlson/turbine/internal/relay/store"
 	"github.com/yarlson/turbine/internal/tasks"
 	"github.com/yarlson/turbine/internal/ui"
 )
 
 // ExecuteTask selects and executes the next runnable task using the provided model and variant.
-func (r *Runner) ExecuteTask(ctx context.Context, backend backends.Backend, model, variant string) error {
+func (r *Runner) ExecuteTask(ctx context.Context, backend relay.Provider, model, variant string) error {
 	task := r.NextRunnableTask()
 	if task == nil {
 		return fmt.Errorf("no runnable tasks found")
@@ -23,7 +24,7 @@ func (r *Runner) ExecuteTask(ctx context.Context, backend backends.Backend, mode
 }
 
 // ExecuteTaskWithTask executes a single task with the given model and variant.
-func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend backends.Backend, task *tasks.Task, model, variant string) error {
+func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend relay.Provider, task *tasks.Task, model, variant string) error {
 	fmt.Printf("%s %s\n", ui.Section("›", ui.Bold(task.Title)), ui.Dim(fmt.Sprintf("[%s]", task.ID)))
 
 	policy := &RetryPolicy{
@@ -40,23 +41,7 @@ func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend backends.Backe
 	// Track failure output for retry context
 	var lastFailureOutput string
 
-	err = policy.Execute(ctx, r, task, func(ctx context.Context, sessionID string) error {
-		// Session setup
-		if sessionID == "" {
-			var err error
-			sessionID, err = backend.StartSession(ctx, backends.SessionOptions{
-				WorkingDir:   r.RepoRoot,
-				ArtifactsDir: arts.Root(),
-				Model:        model,
-				Variant:      variant,
-			})
-			if err != nil {
-				return fmt.Errorf("start session: %w", err)
-			}
-			r.State.BackendSessionID = sessionID
-			fmt.Printf("  %s %s\n", ui.Dim("Session:"), ui.Dim(sessionID))
-		}
-
+	err = policy.Execute(ctx, r, task, func(ctx context.Context) error {
 		// Determine phase based on current stroke and rotation
 		phase := prompt.PhaseImplement
 		if r.State.Stroke > 1 || r.State.Rotation > 1 {
@@ -91,22 +76,40 @@ func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend backends.Backe
 		// Combine system and user prompts
 		fullPrompt := systemPrompt + "\n\n---\n\n" + userPrompt
 
-		// Invoke backend
-		_, err = backend.Send(ctx, sessionID, fullPrompt, backends.SendOptions{})
-		if err != nil {
+		workflowID := fmt.Sprintf("%s-%s", r.State.RunID, task.ID)
+		exec := relay.NewExecutor(backend, relay.WithStore(relaystore.New(r.RepoRoot)))
+		workflow := &relay.Workflow{
+			ID:         workflowID,
+			WorkingDir: r.RepoRoot,
+			Model:      model,
+			Variant:    variant,
+			Sessions: []relay.Session{
+				{
+					Steps: []relay.Step{
+						{
+							Prompt:   fullPrompt,
+							Continue: r.State.Stroke > 1,
+							PostHook: func(_ *relay.StepContext, _ *relay.StepResult) error {
+								fmt.Printf("  %s\n", ui.InProgressMarker()+" Verifying...")
+								_, verifyErr := RunVerification(ctx, arts, task.Verify)
+								if verifyErr != nil {
+									fmt.Printf("  %s\n", ui.FailureMarker()+" Verification failed")
+									lastFailureOutput = verifyErr.Error()
+									return fmt.Errorf("verification failed: %w", verifyErr)
+								}
+								fmt.Printf("  %s\n", ui.SuccessMarker()+" Verification passed")
+								return nil
+							},
+						},
+					},
+				},
+			},
+		}
+
+		if err := runWorkflow(ctx, exec, workflow); err != nil {
 			return fmt.Errorf("backend failed: %w", err)
 		}
 
-		// Run verify commands
-		fmt.Printf("  %s\n", ui.InProgressMarker()+" Verifying...")
-		_, verifyErr := RunVerification(ctx, arts, task.Verify)
-		if verifyErr != nil {
-			fmt.Printf("  %s\n", ui.FailureMarker()+" Verification failed")
-			// Capture failure output for retry context
-			lastFailureOutput = verifyErr.Error()
-			return fmt.Errorf("verification failed: %w", verifyErr)
-		}
-		fmt.Printf("  %s\n", ui.SuccessMarker()+" Verification passed")
 		return nil
 	})
 
@@ -138,6 +141,21 @@ func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend backends.Backe
 		r.State.BackendSessionID = ""
 	}
 
+	return err
+}
+
+func runWorkflow(ctx context.Context, exec *relay.Executor, workflow *relay.Workflow) error {
+	events := make(chan relay.Event, 256)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for range events {
+		}
+	}()
+
+	_, err := exec.Run(ctx, workflow, events)
+	close(events)
+	<-done
 	return err
 }
 

@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/yarlson/turbine/internal/backends"
+	relay "github.com/yarlson/relay"
 	"github.com/yarlson/turbine/internal/prompt"
 	"github.com/yarlson/turbine/internal/prompt/roles"
 )
 
 type Generator struct {
-	backend  backends.Backend
+	backend  relay.Provider
 	repoRoot string
 }
 
-func New(backend backends.Backend, repoRoot string) *Generator {
+func New(backend relay.Provider, repoRoot string) *Generator {
 	return &Generator{
 		backend:  backend,
 		repoRoot: repoRoot,
@@ -31,16 +31,6 @@ func (g *Generator) Generate(ctx context.Context, prdPath string, artifactsDir s
 		return fmt.Errorf("read PRD: %w", err)
 	}
 
-	sessionID, err := g.backend.StartSession(ctx, backends.SessionOptions{
-		WorkingDir:   g.repoRoot,
-		ArtifactsDir: artifactsDir,
-		Model:        model,
-		Variant:      variant,
-	})
-	if err != nil {
-		return fmt.Errorf("start session: %w", err)
-	}
-
 	// Instruct the coding agent to generate and write all files
 	// AgentsGenerator is self-contained, no methodologies needed
 	agentsCtx := prompt.ExecutionContext{Phase: prompt.PhaseGenerateAgents}
@@ -48,16 +38,51 @@ func (g *Generator) Generate(ctx context.Context, prdPath string, artifactsDir s
 	systemPrompt := prompt.Compose(roles.RoleAgentsGenerator, agentsMethods, "")
 	userPrompt := systemPrompt + "\n\n" + prompt.AgentsUserPrompt(string(prdContent))
 
-	_, err = g.backend.Send(ctx, sessionID, userPrompt, backends.SendOptions{})
+	exec := relay.NewExecutor(g.backend)
+	workflow := &relay.Workflow{
+		WorkingDir: g.repoRoot,
+		Sessions: []relay.Session{
+			{
+				Steps: []relay.Step{
+					{
+						Prompt:  userPrompt,
+						Model:   model,
+						Variant: variant,
+						PostHook: func(_ *relay.StepContext, _ *relay.StepResult) error {
+							if err := g.validateOutput(); err != nil {
+								return fmt.Errorf("validation failed: %w", err)
+							}
+							return nil
+						},
+					},
+				},
+			},
+		},
+	}
+
+	if err := g.runWorkflow(ctx, exec, workflow); err != nil {
+		return err
+	}
+
+	_ = artifactsDir
+	return nil
+}
+
+func (g *Generator) runWorkflow(ctx context.Context, exec *relay.Executor, workflow *relay.Workflow) error {
+	events := make(chan relay.Event, 128)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for range events {
+		}
+	}()
+
+	_, err := exec.Run(ctx, workflow, events)
+	close(events)
+	<-done
 	if err != nil {
-		return fmt.Errorf("send prompt: %w", err)
+		return fmt.Errorf("run workflow: %w", err)
 	}
-
-	// Validate that required files were created
-	if err := g.validateOutput(); err != nil {
-		return fmt.Errorf("validation failed: %w", err)
-	}
-
 	return nil
 }
 

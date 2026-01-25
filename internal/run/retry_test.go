@@ -30,7 +30,7 @@ func TestRetryPolicy_Execute(t *testing.T) {
 		policy := &RetryPolicy{MaxStrokes: 3, MaxRotations: 3}
 
 		calls := 0
-		err := policy.Execute(ctx, r, task, func(ctx context.Context, sessionID string) error {
+		err := policy.Execute(ctx, r, task, func(ctx context.Context) error {
 			calls++
 			return nil
 		})
@@ -53,7 +53,7 @@ func TestRetryPolicy_Execute(t *testing.T) {
 		policy := &RetryPolicy{MaxStrokes: 3, MaxRotations: 3}
 
 		calls := 0
-		err := policy.Execute(ctx, r, task, func(ctx context.Context, sessionID string) error {
+		err := policy.Execute(ctx, r, task, func(ctx context.Context) error {
 			calls++
 			if calls < 3 {
 				return fmt.Errorf("fail")
@@ -85,18 +85,12 @@ func TestRetryPolicy_Execute(t *testing.T) {
 		policy := &RetryPolicy{MaxStrokes: 2, MaxRotations: 2}
 
 		calls := 0
-		err = policy.Execute(ctx, r, task, func(ctx context.Context, sessionID string) error {
+		err = policy.Execute(ctx, r, task, func(ctx context.Context) error {
 			calls++
-			// On stroke 1 and 2, session is s1 (first call it was initialized, but s1 was kept)
-			// On stroke 3 (rotation 2, stroke 1), session is empty
 			if calls <= 2 {
-				// The first call might have sessionID="s1" because it was in r.State.BackendSessionID
-				// But RetryPolicy doesn't clear it on initialization.
-				assert.Equal(t, "s1", sessionID)
 				err := os.WriteFile(filepath.Join(repoDir, "dirty.txt"), []byte("dirty"), 0644)
 				assert.NoError(t, err)
 			} else {
-				assert.Equal(t, "", sessionID)
 				// The test expected dirty.txt to be gone, but we removed git clean -fd from ResetHard
 				// so it might still be there if untracked. However, in this test repoDir is setup with git init,
 				// so we should probably check if it was tracked or not.
@@ -124,7 +118,7 @@ func TestRetryPolicy_Execute(t *testing.T) {
 		policy := &RetryPolicy{MaxStrokes: 2, MaxRotations: 2}
 
 		calls := 0
-		err := policy.Execute(ctx, r, task, func(ctx context.Context, sessionID string) error {
+		err := policy.Execute(ctx, r, task, func(ctx context.Context) error {
 			calls++
 			return fmt.Errorf("fail")
 		})

@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/yarlson/turbine/internal/backends"
+	relay "github.com/yarlson/relay"
 	"github.com/yarlson/turbine/internal/config"
 	"github.com/yarlson/turbine/internal/gitx"
 	"github.com/yarlson/turbine/internal/state"
@@ -153,7 +153,7 @@ func (r *Runner) PrintSummary() {
 }
 
 // Run executes tasks from the manifest using the provided backend, model, and variant.
-func (r *Runner) Run(ctx context.Context, backend backends.Backend, model, variant string) error {
+func (r *Runner) Run(ctx context.Context, backend relay.Provider, model, variant string) error {
 	for {
 		// 1. Check if we have an active task to resume
 		var task *tasks.Task

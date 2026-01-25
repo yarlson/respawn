@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/yarlson/turbine/internal/backends"
+	relay "github.com/yarlson/relay"
 	"github.com/yarlson/turbine/internal/config"
 	"github.com/yarlson/turbine/internal/state"
 	"github.com/yarlson/turbine/internal/tasks"
@@ -15,23 +15,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type mockBackend struct {
-	startSessionFunc func(ctx context.Context, opts backends.SessionOptions) (string, error)
-	sendFunc         func(ctx context.Context, sessionID string, prompt string, opts backends.SendOptions) (*backends.Result, error)
+type mockProvider struct {
+	runFunc func(ctx context.Context, params relay.RunParams, events chan<- relay.Event) error
 }
 
-func (m *mockBackend) StartSession(ctx context.Context, opts backends.SessionOptions) (string, error) {
-	if m.startSessionFunc != nil {
-		return m.startSessionFunc(ctx, opts)
+func (m *mockProvider) Name() string { return "mock" }
+
+func (m *mockProvider) Run(ctx context.Context, params relay.RunParams, events chan<- relay.Event) error {
+	_ = params
+	defer close(events)
+	if m.runFunc != nil {
+		return m.runFunc(ctx, params, events)
 	}
-	return "mock-session", nil
+	return nil
 }
 
-func (m *mockBackend) Send(ctx context.Context, sessionID string, prompt string, opts backends.SendOptions) (*backends.Result, error) {
-	if m.sendFunc != nil {
-		return m.sendFunc(ctx, sessionID, prompt, opts)
-	}
-	return &backends.Result{Output: "mock-output"}, nil
+func (m *mockProvider) Resume(ctx context.Context, sessionID string, params relay.RunParams, events chan<- relay.Event) error {
+	_ = sessionID
+	return m.Run(ctx, params, events)
 }
 
 func TestExecuteTask_Success(t *testing.T) {
@@ -64,7 +65,7 @@ func TestExecuteTask_Success(t *testing.T) {
 		Config:   config.Defaults{Retry: config.Retry{Strokes: 3, Rotations: 3}},
 	}
 
-	mock := &mockBackend{}
+	mock := &mockProvider{}
 
 	err := r.ExecuteTask(ctx, mock, "claude-3-5-sonnet", "")
 	assert.NoError(t, err)
@@ -108,7 +109,7 @@ func TestExecuteTask_VerifyFailure(t *testing.T) {
 		Config:   config.Defaults{Retry: config.Retry{Strokes: 3, Rotations: 3}},
 	}
 
-	mock := &mockBackend{}
+	mock := &mockProvider{}
 
 	err := r.ExecuteTask(ctx, mock, "claude-3-5-sonnet", "")
 	assert.Error(t, err)

@@ -52,7 +52,7 @@ func TestRunner_Run_ExitCodes(t *testing.T) {
 			Config:   config.Defaults{Retry: config.Retry{Strokes: 1, Rotations: 1}},
 		}
 
-		mock := &mockBackend{}
+		mock := &mockProvider{}
 		err := r.Run(ctx, mock, "claude-3-5-sonnet", "")
 		assert.NoError(t, err)
 
@@ -93,7 +93,7 @@ func TestRunner_Run_ExitCodes(t *testing.T) {
 			Config:   config.Defaults{Retry: config.Retry{Strokes: 1, Rotations: 1}},
 		}
 
-		mock := &mockBackend{}
+		mock := &mockProvider{}
 		err := r.Run(ctx, mock, "claude-3-5-sonnet", "")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "1 tasks failed")

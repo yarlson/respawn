@@ -6,14 +6,14 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/yarlson/turbine/internal/backends"
+	relay "github.com/yarlson/relay"
 	"github.com/yarlson/turbine/internal/prompt"
 	"github.com/yarlson/turbine/internal/prompt/roles"
 	"github.com/yarlson/turbine/internal/tasks"
 )
 
 type Decomposer struct {
-	backend  backends.Backend
+	backend  relay.Provider
 	repoRoot string
 }
 
@@ -31,7 +31,7 @@ type DecomposeOptions struct {
 
 const maxValidationRetries = 2
 
-func New(backend backends.Backend, repoRoot string) *Decomposer {
+func New(backend relay.Provider, repoRoot string) *Decomposer {
 	return &Decomposer{
 		backend:  backend,
 		repoRoot: repoRoot,
@@ -52,27 +52,11 @@ func (d *Decomposer) Decompose(ctx context.Context, prdPath string, opts Decompo
 	outputPath := ".turbine/tasks.yaml"
 	tasksPath := filepath.Join(d.repoRoot, outputPath)
 
-	// Start session without specifying model - we'll set it per-send
-	sessionID, err := d.backend.StartSession(ctx, backends.SessionOptions{
-		WorkingDir:   d.repoRoot,
-		ArtifactsDir: opts.ArtifactsDir,
-	})
-	if err != nil {
-		return fmt.Errorf("start session: %w", err)
-	}
-
 	// Phase 1: Explore - no methodologies needed
 	exploreCtx := prompt.ExecutionContext{Phase: prompt.PhaseExplore}
 	exploreMethods := prompt.SelectMethodologies(exploreCtx)
 	exploreSystemPrompt := prompt.Compose(roles.RoleExplorer, exploreMethods, "")
 	explorePrompt := exploreSystemPrompt + "\n\n" + prompt.ExploreUserPrompt(string(prdContent))
-	_, err = d.backend.Send(ctx, sessionID, explorePrompt, backends.SendOptions{
-		Model:   opts.FastModel,
-		Variant: opts.FastVariant,
-	})
-	if err != nil {
-		return fmt.Errorf("explore phase: %w", err)
-	}
 
 	// Phase 2: Decompose - uses Planning methodology
 	decomposeCtx := prompt.ExecutionContext{Phase: prompt.PhaseDecompose}
@@ -80,31 +64,83 @@ func (d *Decomposer) Decompose(ctx context.Context, prdPath string, opts Decompo
 	decomposeSystemPrompt := prompt.Compose(roles.RoleDecomposer, decomposeMethods, "")
 	decomposePrompt := decomposeSystemPrompt + "\n\n" + prompt.DecomposeUserPrompt(string(prdContent), outputPath)
 
+	exec := relay.NewExecutor(d.backend)
+
+	if err := d.runWorkflow(ctx, exec, &relay.Workflow{
+		WorkingDir: d.repoRoot,
+		Sessions: []relay.Session{
+			{
+				Steps: []relay.Step{
+					{
+						Prompt:  explorePrompt,
+						Model:   opts.FastModel,
+						Variant: opts.FastVariant,
+					},
+					{
+						Prompt:  decomposePrompt,
+						Model:   opts.SlowModel,
+						Variant: opts.SlowVariant,
+					},
+				},
+			},
+		},
+	}); err != nil {
+		return err
+	}
+
 	var lastErr error
-
 	for i := 0; i <= maxValidationRetries; i++ {
-		_, err := d.backend.Send(ctx, sessionID, decomposePrompt, backends.SendOptions{
-			Model:   opts.SlowModel,
-			Variant: opts.SlowVariant,
-		})
-		if err != nil {
-			return fmt.Errorf("send prompt: %w", err)
-		}
-
 		// Validate the file the agent wrote
 		lastErr = d.validateTasksFile(tasksPath)
 		if lastErr == nil {
 			return nil
 		}
 
-		// Ask agent to fix the file
-		if i < maxValidationRetries {
-			fileContent, _ := os.ReadFile(tasksPath)
-			decomposePrompt = prompt.DecomposeFixPrompt(string(prdContent), string(fileContent), lastErr.Error())
+		if i >= maxValidationRetries {
+			break
+		}
+
+		fileContent, _ := os.ReadFile(tasksPath)
+		fixPrompt := prompt.DecomposeFixPrompt(string(prdContent), string(fileContent), lastErr.Error())
+
+		if err := d.runWorkflow(ctx, exec, &relay.Workflow{
+			WorkingDir: d.repoRoot,
+			Sessions: []relay.Session{
+				{
+					Steps: []relay.Step{
+						{
+							Prompt:   fixPrompt,
+							Model:    opts.SlowModel,
+							Variant:  opts.SlowVariant,
+							Continue: true,
+						},
+					},
+				},
+			},
+		}); err != nil {
+			return err
 		}
 	}
 
 	return fmt.Errorf("decompose failed after %d retries: %w", maxValidationRetries, lastErr)
+}
+
+func (d *Decomposer) runWorkflow(ctx context.Context, exec *relay.Executor, workflow *relay.Workflow) error {
+	events := make(chan relay.Event, 128)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for range events {
+		}
+	}()
+
+	_, err := exec.Run(ctx, workflow, events)
+	close(events)
+	<-done
+	if err != nil {
+		return fmt.Errorf("run workflow: %w", err)
+	}
+	return nil
 }
 
 // validateTasksFile checks that the tasks file exists and is valid.
