@@ -1,7 +1,13 @@
-package roles
+package agents
 
-// AgentsGeneratorRole defines the AGENTS.md generator agent identity.
-const AgentsGeneratorRole = `You are an AGENTS.md generator. Create comprehensive agent guidelines from PRDs using progressive disclosure.
+import (
+	"fmt"
+	"strings"
+)
+
+const promptBlockSeparator = "\n\n---\n\n"
+
+const agentsGeneratorRole = `You are an AGENTS.md generator. Create comprehensive agent guidelines from PRDs using progressive disclosure.
 
 Your Task
 Create the following files in the repository:
@@ -40,7 +46,7 @@ Analyze the PRD to determine what type of work this project involves, then presc
 - Document both approaches
 
 Progressive Disclosure Principles
-1. **Root AGENTS.md should be minimal (≤300 lines)**
+1. **Root AGENTS.md should be minimal (<=300 lines)**
    - One-sentence project description
    - Development methodology (TDD, UI testing, etc.) - THIS IS CRITICAL
    - Package manager (if non-standard)
@@ -77,3 +83,23 @@ Required Actions
 
 BEGIN
 Read the PRD below, determine the appropriate development methodology, and create all required files now.`
+
+func buildAgentsPrompt(prdContent string) string {
+	return joinPromptBlocks(agentsGeneratorRole, agentsUserPrompt(prdContent))
+}
+
+func agentsUserPrompt(prdContent string) string {
+	return fmt.Sprintf("PRD Content:\n%s\n\nAnalyze this PRD and create appropriate guidelines:\n\n1. FIRST: Determine project type and select methodology:\n   - Backend/API/Library -> TDD (Test-Driven Development)\n   - Frontend/UI -> Browser validation, visual testing\n   - CLI tools -> Output/exit code verification\n   - Mixed -> Apply appropriate method to each component\n\n2. AGENTS.md (in repository root)\n   - One-sentence project description\n   - **Development Methodology section** - state TDD or other approach clearly\n   - Core stack/technologies\n   - Primary commands (build, test, run)\n   - Links to docs/ files\n   - Keep it minimal (<=300 lines)\n\n3. docs/TESTING.md (REQUIRED)\n   - Describe the feedback loop approach for this project type\n   - For TDD: explain Red-Green-Refactor cycle\n   - For UI: explain browser/visual validation\n   - For CLI: explain output verification\n   - Include concrete examples\n\n4. Other docs/*.md files (create only what's relevant)\n   - docs/GO_CONVENTIONS.md (if Go project)\n   - docs/TYPESCRIPT.md (if TypeScript project)\n   - docs/ARCHITECTURE.md (system design)\n   - docs/SAFETY.md (security guardrails)\n   - docs/API_CONVENTIONS.md (if has APIs)\n\n5. CLAUDE.md symlink\n   - On macOS/Linux: Run: ln -sf AGENTS.md CLAUDE.md\n   - On Windows: Run: mklink CLAUDE.md AGENTS.md (or copy if mklink unavailable)\n   - The symlink must point to AGENTS.md so tools can find project guidelines\n\nWrite all files now using your tools. Do not output file contents as text.", prdContent)
+}
+
+func joinPromptBlocks(blocks ...string) string {
+	trimmed := make([]string, 0, len(blocks))
+	for _, block := range blocks {
+		value := strings.TrimSpace(block)
+		if value == "" {
+			continue
+		}
+		trimmed = append(trimmed, value)
+	}
+	return strings.Join(trimmed, promptBlockSeparator)
+}

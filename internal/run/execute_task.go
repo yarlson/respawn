@@ -7,8 +7,6 @@ import (
 
 	relay "github.com/yarlson/relay"
 	"github.com/yarlson/turbine/internal/gitx"
-	"github.com/yarlson/turbine/internal/prompt"
-	"github.com/yarlson/turbine/internal/prompt/roles"
 	relaystore "github.com/yarlson/turbine/internal/relay/store"
 	"github.com/yarlson/turbine/internal/tasks"
 	"github.com/yarlson/turbine/internal/ui"
@@ -43,38 +41,23 @@ func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend relay.Provider
 
 	err = policy.Execute(ctx, r, task, func(ctx context.Context) error {
 		// Determine phase based on current stroke and rotation
-		phase := prompt.PhaseImplement
-		if r.State.Stroke > 1 || r.State.Rotation > 1 {
-			phase = prompt.PhaseRetry
-		}
-
-		// Build execution context
-		execCtx := prompt.ExecutionContext{
-			Phase:    phase,
+		isRetry := r.State.Stroke > 1 || r.State.Rotation > 1
+		execCtx := promptContext{
+			IsRetry:  isRetry,
 			Attempt:  r.State.Stroke,
 			Rotation: r.State.Rotation,
 		}
 
-		// Select role based on phase
-		role := roles.RoleImplementer
-		if phase == prompt.PhaseRetry {
-			role = roles.RoleRetrier
-		}
-
-		// Compose system prompt with methodologies
-		meths := prompt.SelectMethodologies(execCtx)
-		systemPrompt := prompt.Compose(role, meths, "")
-
 		// Build user prompt based on phase
 		var userPrompt string
-		if phase == prompt.PhaseRetry {
-			userPrompt = prompt.RetryUserPrompt(*task, lastFailureOutput)
+		if isRetry {
+			userPrompt = retryUserPrompt(*task, lastFailureOutput)
 		} else {
-			userPrompt = prompt.ImplementUserPrompt(*task)
+			userPrompt = implementUserPrompt(*task)
 		}
 
 		// Combine system and user prompts
-		fullPrompt := systemPrompt + "\n\n---\n\n" + userPrompt
+		fullPrompt := buildTaskPrompt(execCtx, userPrompt)
 
 		workflowID := fmt.Sprintf("%s-%s", r.State.RunID, task.ID)
 		exec := relay.NewExecutor(backend, relay.WithStore(relaystore.New(r.RepoRoot)))

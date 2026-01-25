@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 
 	relay "github.com/yarlson/relay"
-	"github.com/yarlson/turbine/internal/prompt"
-	"github.com/yarlson/turbine/internal/prompt/roles"
 	"github.com/yarlson/turbine/internal/tasks"
 )
 
@@ -53,16 +51,10 @@ func (d *Decomposer) Decompose(ctx context.Context, prdPath string, opts Decompo
 	tasksPath := filepath.Join(d.repoRoot, outputPath)
 
 	// Phase 1: Explore - no methodologies needed
-	exploreCtx := prompt.ExecutionContext{Phase: prompt.PhaseExplore}
-	exploreMethods := prompt.SelectMethodologies(exploreCtx)
-	exploreSystemPrompt := prompt.Compose(roles.RoleExplorer, exploreMethods, "")
-	explorePrompt := exploreSystemPrompt + "\n\n" + prompt.ExploreUserPrompt(string(prdContent))
+	explorePrompt := buildExplorePrompt(string(prdContent))
 
 	// Phase 2: Decompose - uses Planning methodology
-	decomposeCtx := prompt.ExecutionContext{Phase: prompt.PhaseDecompose}
-	decomposeMethods := prompt.SelectMethodologies(decomposeCtx)
-	decomposeSystemPrompt := prompt.Compose(roles.RoleDecomposer, decomposeMethods, "")
-	decomposePrompt := decomposeSystemPrompt + "\n\n" + prompt.DecomposeUserPrompt(string(prdContent), outputPath)
+	decomposePrompt := buildDecomposePrompt(string(prdContent), outputPath)
 
 	exec := relay.NewExecutor(d.backend)
 
@@ -101,7 +93,7 @@ func (d *Decomposer) Decompose(ctx context.Context, prdPath string, opts Decompo
 		}
 
 		fileContent, _ := os.ReadFile(tasksPath)
-		fixPrompt := prompt.DecomposeFixPrompt(string(prdContent), string(fileContent), lastErr.Error())
+		fixPrompt := buildDecomposeFixPrompt(string(prdContent), string(fileContent), lastErr.Error())
 
 		if err := d.runWorkflow(ctx, exec, &relay.Workflow{
 			WorkingDir: d.repoRoot,

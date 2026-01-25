@@ -17,6 +17,8 @@ github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
 github.com/yarlson/pin v0.9.1 h1:ZfbMMTSpZw9X7ebq9QS6FAUq66PTv56S4WN4puO2HK0=
 github.com/yarlson/pin v0.9.1/go.mod h1:FC/d9PacAtwh05XzSznZWhA447uvimitjgDDl5YaVLE=
+github.com/yarlson/relay v0.1.0 h1:4VC8FaGBeBRQFrVuuYvjoi03L4DRfHNICr8XnUnecMU=
+github.com/yarlson/relay v0.1.0/go.mod h1:ZleOk+ZhUXupjJVsY2X+wWRbWSgbrn9YJKgHqU3UrPI=
 go.yaml.in/yaml/v3 v3.0.4/go.mod h1:DhzuOOF2ATzADvBadXxruRBLzYTpT36CKvDb3+aBEFg=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=

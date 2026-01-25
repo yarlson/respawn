@@ -6,8 +6,6 @@ import (
 	"os"
 
 	relay "github.com/yarlson/relay"
-	"github.com/yarlson/turbine/internal/prompt"
-	"github.com/yarlson/turbine/internal/prompt/roles"
 )
 
 type Generator struct {
@@ -33,10 +31,7 @@ func (g *Generator) Generate(ctx context.Context, prdPath string, artifactsDir s
 
 	// Instruct the coding agent to generate and write all files
 	// AgentsGenerator is self-contained, no methodologies needed
-	agentsCtx := prompt.ExecutionContext{Phase: prompt.PhaseGenerateAgents}
-	agentsMethods := prompt.SelectMethodologies(agentsCtx)
-	systemPrompt := prompt.Compose(roles.RoleAgentsGenerator, agentsMethods, "")
-	userPrompt := systemPrompt + "\n\n" + prompt.AgentsUserPrompt(string(prdContent))
+	userPrompt := buildAgentsPrompt(string(prdContent))
 
 	exec := relay.NewExecutor(g.backend)
 	workflow := &relay.Workflow{

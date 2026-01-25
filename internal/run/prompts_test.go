@@ -1,22 +1,52 @@
-package prompt
+package run
 
 import (
 	"strings"
 	"testing"
 
-	"github.com/yarlson/turbine/internal/tasks"
-
 	"github.com/stretchr/testify/assert"
+	"github.com/yarlson/turbine/internal/tasks"
 )
 
-func TestDecomposeUserPrompt(t *testing.T) {
-	prd := "Build a rocket."
-	path := ".turbine/tasks.yaml"
-	prompt := DecomposeUserPrompt(prd, path)
+func TestBuildTaskPrompt_ImplementationContainsTDD(t *testing.T) {
+	ctx := promptContext{
+		IsRetry:  false,
+		Attempt:  1,
+		Rotation: 1,
+	}
+	result := buildTaskPrompt(ctx, "Task: build something")
 
-	assert.Contains(t, prompt, prd)
-	assert.Contains(t, prompt, path)
-	assert.Contains(t, prompt, "## PRD Content:")
+	assert.Contains(t, result, "coding agent")
+	assert.Contains(t, result, "Test-Driven Development")
+	assert.Contains(t, result, "Iron Law")
+	assert.Contains(t, result, "Verification Before Completion")
+	assert.Contains(t, result, "Task: build something")
+}
+
+func TestBuildTaskPrompt_RetryContainsDebuggingLight(t *testing.T) {
+	ctx := promptContext{
+		IsRetry:  true,
+		Attempt:  2,
+		Rotation: 1,
+	}
+	result := buildTaskPrompt(ctx, "Fix the failure")
+
+	assert.Contains(t, result, "retry")
+	assert.Contains(t, result, "Systematic Debugging")
+	assert.Contains(t, result, "Root Cause Investigation")
+	assert.NotContains(t, result, "Architectural Check")
+}
+
+func TestBuildTaskPrompt_RetryNewRotationContainsFullDebugging(t *testing.T) {
+	ctx := promptContext{
+		IsRetry:  true,
+		Attempt:  1,
+		Rotation: 2,
+	}
+	result := buildTaskPrompt(ctx, "Fresh rotation")
+
+	assert.Contains(t, result, "Architectural Check")
+	assert.Contains(t, result, "Test-Driven Development")
 }
 
 func TestImplementUserPrompt(t *testing.T) {
@@ -28,7 +58,7 @@ func TestImplementUserPrompt(t *testing.T) {
 		Verify:      []string{"go test ./..."},
 	}
 
-	prompt := ImplementUserPrompt(task)
+	prompt := implementUserPrompt(task)
 
 	assert.Contains(t, prompt, "T-001")
 	assert.Contains(t, prompt, "Test Task")
@@ -49,7 +79,7 @@ func TestRetryUserPrompt(t *testing.T) {
 	}
 	failureOutput := "Error: something went wrong\nLine 2\nLine 3"
 
-	prompt := RetryUserPrompt(task, failureOutput)
+	prompt := retryUserPrompt(task, failureOutput)
 
 	assert.Contains(t, prompt, "T-001")
 	assert.Contains(t, prompt, "Failure Output")
@@ -59,7 +89,6 @@ func TestRetryUserPrompt(t *testing.T) {
 }
 
 func TestTrimFailureOutput(t *testing.T) {
-	// Test line trimming
 	longOutput := ""
 	for i := 0; i < 200; i++ {
 		longOutput += "line\n"
@@ -68,10 +97,9 @@ func TestTrimFailureOutput(t *testing.T) {
 	lines := strings.Split(strings.TrimSpace(trimmed), "\n")
 	assert.LessOrEqual(t, len(lines), 100)
 
-	// Test char trimming
 	hugeOutput := strings.Repeat("a", 10000)
 	trimmed = trimFailureOutput(hugeOutput)
-	assert.LessOrEqual(t, len(trimmed), 4096+3) // +3 for "..."
+	assert.LessOrEqual(t, len(trimmed), 4096+3)
 	assert.True(t, strings.HasPrefix(trimmed, "..."))
 }
 
@@ -82,20 +110,8 @@ func TestDeterministicFormatting(t *testing.T) {
 		Description: "Desc",
 	}
 
-	p1 := ImplementUserPrompt(task)
-	p2 := ImplementUserPrompt(task)
+	p1 := implementUserPrompt(task)
+	p2 := implementUserPrompt(task)
 
 	assert.Equal(t, p1, p2)
-}
-
-func TestAgentsUserPrompt(t *testing.T) {
-	prd := "Build a CLI tool for managing tasks."
-	prompt := AgentsUserPrompt(prd)
-
-	assert.Contains(t, prompt, prd)
-	assert.Contains(t, prompt, "PRD Content:")
-	assert.Contains(t, prompt, "AGENTS.md")
-	assert.Contains(t, prompt, "docs/TESTING.md")
-	assert.Contains(t, prompt, "TDD")
-	assert.Contains(t, prompt, "CLAUDE.md symlink")
 }
