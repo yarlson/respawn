@@ -7,7 +7,7 @@ import (
 	"github.com/yarlson/turbine/internal/tasks"
 )
 
-const promptBlockSeparator = "\n\n---\n\n"
+const promptSeparator = "\n\n---\n\n"
 
 const implementerRole = `You are a coding agent working within the Turbine harness.
 
@@ -372,58 +372,27 @@ type promptContext struct {
 	Rotation int
 }
 
+const methodHeader = "# Required Methodologies\n\nFollow these methodologies for this task:"
+
+const methodBlockImplement = methodHeader + promptSeparator + methodologyTDD + promptSeparator + methodologyVerification
+const methodBlockRetry = methodHeader + promptSeparator + methodologyDebuggingLight + promptSeparator + methodologyVerification
+const methodBlockRetryFresh = methodHeader + promptSeparator + methodologyDebuggingFull + promptSeparator + methodologyTDD + promptSeparator + methodologyVerification
+
+const taskPromptTemplate = "%s" + promptSeparator + "%s" + promptSeparator + "%s"
+
 func buildTaskPrompt(ctx promptContext, userPrompt string) string {
 	role := implementerRole
+	methodBlock := methodBlockImplement
 	if ctx.IsRetry {
 		role = retrierRole
-	}
-
-	blocks := []string{role}
-	if methods := formatMethodologies(selectMethodologies(ctx)); methods != "" {
-		blocks = append(blocks, methods)
-	}
-	blocks = append(blocks, userPrompt)
-
-	return joinPromptBlocks(blocks...)
-}
-
-func selectMethodologies(ctx promptContext) []string {
-	if !ctx.IsRetry {
-		return []string{methodologyTDD, methodologyVerification}
-	}
-	if ctx.Rotation > 1 && ctx.Attempt == 1 {
-		return []string{methodologyDebuggingFull, methodologyTDD, methodologyVerification}
-	}
-	return []string{methodologyDebuggingLight, methodologyVerification}
-}
-
-func joinPromptBlocks(blocks ...string) string {
-	trimmed := make([]string, 0, len(blocks))
-	for _, block := range blocks {
-		value := strings.TrimSpace(block)
-		if value == "" {
-			continue
+		if ctx.Rotation > 1 && ctx.Attempt == 1 {
+			methodBlock = methodBlockRetryFresh
+		} else {
+			methodBlock = methodBlockRetry
 		}
-		trimmed = append(trimmed, value)
-	}
-	return strings.Join(trimmed, promptBlockSeparator)
-}
-
-func formatMethodologies(methods []string) string {
-	items := make([]string, 0, len(methods))
-	for _, method := range methods {
-		value := strings.TrimSpace(method)
-		if value == "" {
-			continue
-		}
-		items = append(items, value)
-	}
-	if len(items) == 0 {
-		return ""
 	}
 
-	intro := "# Required Methodologies\n\nFollow these methodologies for this task:"
-	return joinPromptBlocks(intro, strings.Join(items, promptBlockSeparator))
+	return fmt.Sprintf(taskPromptTemplate, role, methodBlock, strings.TrimSpace(userPrompt))
 }
 
 func implementUserPrompt(task tasks.Task) string {

@@ -15,4 +15,6 @@ func TestBuildAgentsPrompt(t *testing.T) {
 	assert.Contains(t, result, "docs/TESTING.md")
 	assert.Contains(t, result, "TDD")
 	assert.Contains(t, result, "CLAUDE.md")
+	assert.Contains(t, result, "Do NOT include code snippets")
+	assert.Contains(t, result, "Command examples are OK")
 }
