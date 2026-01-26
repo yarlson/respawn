@@ -34,6 +34,7 @@ const plannerRole = `You are a just-in-time task planner. Convert PRDs and progr
 
 Your Task
 Convert a PRD (Markdown) and progress log into a YAML file containing the next task to execute, just-in-time.
+If the PRD includes a validation plan, the task must strictly follow it. If the PRD does not include a validation plan, include verification steps that follow best practices for the current language/framework.
 
 You MUST write the file directly using your file writing tools. Do NOT output YAML as text.
 
