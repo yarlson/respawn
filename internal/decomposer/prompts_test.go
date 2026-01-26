@@ -26,7 +26,7 @@ func TestBuildPlanPrompt(t *testing.T) {
 	assert.Contains(t, result, prd)
 	assert.Contains(t, result, progress)
 	assert.Contains(t, result, path)
-	assert.Contains(t, result, "task planner")
+	assert.Contains(t, result, "just-in-time task planner")
 	assert.Contains(t, result, "Task Planning Methodology")
 }
 

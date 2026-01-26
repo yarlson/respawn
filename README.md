@@ -1,14 +1,14 @@
 # Turbine
 
-Turbine is a Go-based CLI that autonomously drives coding agents through a resilient "Plan → Execute → Verify → Commit" loop to implement a PRD end-to-end without human interaction.
+Turbine is a Go-based CLI that autonomously drives coding agents through a resilient "Just-in-time Plan → Execute → Verify → Commit" loop to implement a PRD end-to-end without human interaction.
 
 <div align="center">
   <img src="assets/turbine.jpeg" alt="Turbine" width="100%" />
 </div>
 
-- **Task planning** - Plans the next task from PRD + progress without a full upfront DAG
+- **Just-in-time task planning** - Plans the next task from PRD + progress without a full upfront DAG
 - **AGENTS.md generation** - Creates project guidelines with progressive disclosure and appropriate development methodologies (TDD for backend, UI validation for frontend)
-- **Autonomous task execution** - Plans and executes the next task from `.turbine/task.yaml` using PRD + progress
+- **Autonomous task execution** - Plans and executes the next task just-in-time from `.turbine/task.yaml` using PRD + progress
 - **Multiple backend support** - Works with Claude and OpenCode agents
 - **Resilient execution** - Implements 3x3 rotation/stroke retry policy for reliable task completion
 - **State persistence** - Resumes interrupted runs from saved state

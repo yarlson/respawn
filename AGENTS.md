@@ -1,6 +1,6 @@
 # AGENTS.md — Turbine Engineering Rules
 
-Turbine is a minimal Go-based harness for planning and executing the next task from `.turbine/task.yaml` and `.turbine/progress.md`.
+Turbine is a minimal Go-based harness for just-in-time task planning and execution from `.turbine/task.yaml` and `.turbine/progress.md`.
 
 ## Core Stack
 

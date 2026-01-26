@@ -76,7 +76,7 @@ Turbine uses different models for different operations:
 Used for one-time, high-stakes operations that benefit from higher quality:
 
 - `turbine agents` - Generates AGENTS.md with methodology selection and project guidelines
-- `turbine` (planning phase) - Plans the next task into `.turbine/task.yaml`
+- `turbine` (planning phase) - Plans the next task just-in-time into `.turbine/task.yaml`
 
 These operations happen once per project and produce artifacts used throughout development, so quality is prioritized over cost.
 

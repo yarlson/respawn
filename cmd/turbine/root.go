@@ -17,7 +17,7 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "turbine",
 	Short: "Plan and execute the next task",
-	Long:  `Plans and executes the next task from PRD and progress logs using an AI backend.`,
+	Long:  `Plans and executes the next task just-in-time from PRD and progress logs using an AI backend.`,
 }
 
 func RootCmd() *cobra.Command {

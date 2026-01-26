@@ -2,7 +2,7 @@
 
 ## Overview
 
-Build a minimal, reliable harness that plans and executes tasks autonomously from `./.turbine/task.yaml` with progress tracked in `./.turbine/progress.md`.
+Build a minimal, reliable harness that uses just-in-time task planning and executes tasks autonomously from `./.turbine/task.yaml` with progress tracked in `./.turbine/progress.md`.
 
 ## Core Principles
 

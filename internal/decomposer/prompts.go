@@ -30,10 +30,10 @@ How to Explore
 Output
 Summarize your findings. This context will be used in the next step to generate the next task.`
 
-const plannerRole = `You are a task planner. Convert PRDs and progress logs into a single executable task.
+const plannerRole = `You are a just-in-time task planner. Convert PRDs and progress logs into a single executable task.
 
 Your Task
-Convert a PRD (Markdown) and progress log into a YAML file containing the next task to execute.
+Convert a PRD (Markdown) and progress log into a YAML file containing the next task to execute, just-in-time.
 
 You MUST write the file directly using your file writing tools. Do NOT output YAML as text.
 
@@ -197,7 +197,7 @@ const planPromptTemplate = "%s\n\n---\n\n" +
 	"## PRD Content:\n\n%s\n\n" +
 	"## Progress Log:\n\n%s\n\n" +
 	"## Instructions\n\n" +
-	"Now create the next task based on your exploration findings and the progress log.\n\n" +
+	"Now create the next task just-in-time based on your exploration findings and the progress log.\n\n" +
 	"Write the task file to: %s\n\n" +
 	"Use your file writing tools to create the file. Do NOT output YAML as text.\n" +
 	"Create the .turbine directory first if it doesn't exist: mkdir -p .turbine\n\n" +
