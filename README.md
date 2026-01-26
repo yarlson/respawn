@@ -1,14 +1,14 @@
 # Turbine
 
-Turbine is a Go-based CLI that autonomously drives coding agents through a resilient "Decompose → Execute → Verify → Commit" loop to implement a PRD end-to-end without human interaction.
+Turbine is a Go-based CLI that autonomously drives coding agents through a resilient "Plan → Execute → Verify → Commit" loop to implement a PRD end-to-end without human interaction.
 
 <div align="center">
   <img src="assets/turbine.jpeg" alt="Turbine" width="100%" />
 </div>
 
-- **PRD decomposition** - Breaks down PRD files into actionable tasks with dependencies
+- **Task planning** - Plans the next task from PRD + progress without a full upfront DAG
 - **AGENTS.md generation** - Creates project guidelines with progressive disclosure and appropriate development methodologies (TDD for backend, UI validation for frontend)
-- **Autonomous task execution** - Reads tasks from `.turbine/tasks.yaml` and executes them sequentially
+- **Autonomous task execution** - Plans and executes the next task from `.turbine/task.yaml` using PRD + progress
 - **Multiple backend support** - Works with Claude and OpenCode agents
 - **Resilient execution** - Implements 3x3 rotation/stroke retry policy for reliable task completion
 - **State persistence** - Resumes interrupted runs from saved state
@@ -32,13 +32,9 @@ go build -o turbine .
    ```bash
    turbine agents --prd path/to/your-prd.md
    ```
-3. Load your PRD into the task manifest:
+3. Spin up the turbine:
    ```bash
-   turbine load --prd path/to/your-prd.md
-   ```
-4. Spin up the turbine:
-   ```bash
-   turbine
+   turbine --prd path/to/your-prd.md
    ```
 
 ## Usage
@@ -49,7 +45,7 @@ go build -o turbine .
 turbine [flags]
 ```
 
-Reads tasks from `.turbine/tasks.yaml` and executes each one using the configured backend.
+Plans the next task from PRD + progress, writes `.turbine/task.yaml`, and executes it using the configured backend.
 
 Each command prints the backend and model being used:
 
@@ -71,14 +67,6 @@ Generates `AGENTS.md` and supporting documentation in `docs/` with progressive d
 
 Also creates a `CLAUDE.md` symlink pointing to `AGENTS.md` for tool compatibility.
 
-### Load PRD into Task Manifest
-
-```bash
-turbine load --prd <path> [flags]
-```
-
-Takes a PRD file and breaks it down into actionable tasks in `.turbine/tasks.yaml`. The agent will discover and follow any project conventions found in the repository (like TDD from `AGENTS.md`).
-
 ### Flags
 
 | Flag        | Description                         |
@@ -86,6 +74,7 @@ Takes a PRD file and breaks it down into actionable tasks in `.turbine/tasks.yam
 | `--backend` | AI backend (`opencode` or `claude`) |
 | `--model`   | Model name for the backend          |
 | `--variant` | Variant configuration               |
+| `--prd`     | Path to the PRD file                |
 | `--yes`     | Skip confirmation prompts           |
 
 ## Configuration
@@ -116,7 +105,7 @@ Turbine uses different models for different operations to optimize cost and qual
 
 - Used for one-time, high-stakes operations
 - `turbine agents` - Generates AGENTS.md with methodology selection
-- `turbine load` - Decomposes PRD into structured tasks
+- `turbine` (planning phase) - Plans the next task from PRD + progress
 - Better quality for planning and architecture
 
 **Fast Model** (e.g., Claude Sonnet):
@@ -156,22 +145,29 @@ turbine --model anthropic/claude-sonnet
 turbine --variant high
 ```
 
-### Tasks File
+### Task File
 
-Task definitions are stored at:
+Current task definition is stored at:
 
-- `./.turbine/tasks.yaml` (tracked in git)
+- `./.turbine/task.yaml` (tracked in git)
 
 Each task includes:
 
 - `id` - Unique identifier
 - `title` - Task title
 - `status` - `todo`, `done`, or `failed`
-- `deps` - Task dependencies (optional)
 - `description` - Detailed description
 - `acceptance` - Acceptance criteria
 - `verify` - Verification commands
 - `commit_message` - Git commit message
+
+Completed tasks are archived under:
+
+- `./.turbine/archive/`
+
+Progress is tracked at:
+
+- `./.turbine/progress.md`
 
 ### Run Artifacts
 

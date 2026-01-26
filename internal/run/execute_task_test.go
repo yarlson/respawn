@@ -39,28 +39,26 @@ func TestExecuteTask_Success(t *testing.T) {
 	ctx := context.Background()
 	repoDir := setupTestRepo(t)
 
-	// Setup tasks.yaml
+	// Setup task.yaml
 	tasksDir := filepath.Join(repoDir, ".turbine")
 	require.NoError(t, os.MkdirAll(tasksDir, 0755))
-	taskList := &tasks.TaskList{
+	taskFile := &tasks.TaskFile{
 		Version: 1,
-		Tasks: []tasks.Task{
-			{
-				ID:            "T1",
-				Title:         "Task 1",
-				Status:        tasks.StatusTodo,
-				Description:   "Description 1",
-				CommitMessage: "feat: task 1",
-				Verify:        []string{"true"},
-			},
+		Task: tasks.Task{
+			ID:            "T1",
+			Title:         "Task 1",
+			Status:        tasks.StatusTodo,
+			Description:   "Description 1",
+			CommitMessage: "feat: task 1",
+			Verify:        []string{"true"},
 		},
 	}
-	tasksPath := filepath.Join(tasksDir, "tasks.yaml")
-	require.NoError(t, taskList.Save(tasksPath))
+	taskPath := filepath.Join(tasksDir, "task.yaml")
+	require.NoError(t, taskFile.Save(taskPath))
 
 	r := &Runner{
 		RepoRoot: repoDir,
-		Tasks:    taskList,
+		TaskFile: taskFile,
 		State:    &state.RunState{RunID: "test-run"},
 		Config:   config.Defaults{Retry: config.Retry{Strokes: 3, Rotations: 3}},
 	}
@@ -70,10 +68,13 @@ func TestExecuteTask_Success(t *testing.T) {
 	err := r.ExecuteTask(ctx, mock, "claude-3-5-sonnet", "")
 	assert.NoError(t, err)
 
-	// Verify status updated
-	updatedTasks, err := tasks.Load(tasksPath)
+	// Verify task file removed and archived
+	_, err = os.Stat(taskPath)
+	assert.True(t, os.IsNotExist(err))
+	archiveDir := filepath.Join(repoDir, ArchiveRelDir)
+	entries, err := os.ReadDir(archiveDir)
 	require.NoError(t, err)
-	assert.Equal(t, tasks.StatusDone, updatedTasks.Tasks[0].Status)
+	assert.NotEmpty(t, entries)
 
 	// Verify commit exists
 	// We can't easily check the commit without shelling out, but setupTestRepo already uses git.
@@ -83,28 +84,26 @@ func TestExecuteTask_VerifyFailure(t *testing.T) {
 	ctx := context.Background()
 	repoDir := setupTestRepo(t)
 
-	// Setup tasks.yaml
+	// Setup task.yaml
 	tasksDir := filepath.Join(repoDir, ".turbine")
 	require.NoError(t, os.MkdirAll(tasksDir, 0755))
-	taskList := &tasks.TaskList{
+	taskFile := &tasks.TaskFile{
 		Version: 1,
-		Tasks: []tasks.Task{
-			{
-				ID:            "T1",
-				Title:         "Task 1",
-				Status:        tasks.StatusTodo,
-				Description:   "Description 1",
-				CommitMessage: "feat: task 1",
-				Verify:        []string{"false"}, // Fails
-			},
+		Task: tasks.Task{
+			ID:            "T1",
+			Title:         "Task 1",
+			Status:        tasks.StatusTodo,
+			Description:   "Description 1",
+			CommitMessage: "feat: task 1",
+			Verify:        []string{"false"}, // Fails
 		},
 	}
-	tasksPath := filepath.Join(tasksDir, "tasks.yaml")
-	require.NoError(t, taskList.Save(tasksPath))
+	taskPath := filepath.Join(tasksDir, "task.yaml")
+	require.NoError(t, taskFile.Save(taskPath))
 
 	r := &Runner{
 		RepoRoot: repoDir,
-		Tasks:    taskList,
+		TaskFile: taskFile,
 		State:    &state.RunState{RunID: "test-run"},
 		Config:   config.Defaults{Retry: config.Retry{Strokes: 3, Rotations: 3}},
 	}
@@ -116,7 +115,7 @@ func TestExecuteTask_VerifyFailure(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed after 3 rotations")
 
 	// Verify status updated to failed (policy exhausted)
-	updatedTasks, err := tasks.Load(tasksPath)
+	updatedTasks, err := tasks.LoadTaskFile(taskPath)
 	require.NoError(t, err)
-	assert.Equal(t, tasks.StatusFailed, updatedTasks.Tasks[0].Status)
+	assert.Equal(t, tasks.StatusFailed, updatedTasks.Task.Status)
 }

@@ -16,8 +16,8 @@ var (
 
 var rootCmd = &cobra.Command{
 	Use:   "turbine",
-	Short: "Spin up and execute the task manifest",
-	Long:  `Reads tasks from .turbine/tasks.yaml and executes each one autonomously using an AI backend.`,
+	Short: "Plan and execute the next task",
+	Long:  `Plans and executes the next task from PRD and progress logs using an AI backend.`,
 }
 
 func RootCmd() *cobra.Command {
@@ -40,7 +40,7 @@ func resolveBackend(cfg *config.Config, defaultModel string) (relay.Provider, st
 }
 
 // resolveBackendWithModels returns a backend and both fast/slow model configs.
-// Used for two-phase operations like decompose that need both models.
+// Used for two-phase operations like planning that need both models.
 func resolveBackendWithModels(cfg *config.Config) (relay.Provider, config.Model, config.Model, error) {
 	return relayprovider.ResolveWithModels(cfg, config.Overrides{
 		Backend: globalBackend,

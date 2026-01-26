@@ -3,6 +3,8 @@ package turbine
 import (
 	"bytes"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -59,4 +61,25 @@ func TestAgentsCmdFlagsCapture(t *testing.T) {
 	assert.Equal(t, "opencode", globalBackend)
 	assert.Equal(t, "experimental", globalVariant)
 	assert.True(t, globalYes)
+}
+
+func setupTestRepo(t *testing.T) string {
+	tmpDir := t.TempDir()
+	// Initialize a dummy git repo
+	cmd := exec.Command("git", "init")
+	cmd.Dir = tmpDir
+	require.NoError(t, cmd.Run())
+
+	// Create .turbine/runs to avoid errors
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".turbine", "runs"), 0755))
+
+	// Move to tmpDir for the duration of the test
+	oldCwd, err := os.Getwd()
+	require.NoError(t, err)
+	require.NoError(t, os.Chdir(tmpDir))
+	t.Cleanup(func() {
+		require.NoError(t, os.Chdir(oldCwd))
+	})
+
+	return tmpDir
 }

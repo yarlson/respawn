@@ -159,6 +159,7 @@ $env:PATH += ";$env:GOPATH\bin"
 **Solution:** This is non-fatal. The agent will automatically fall back to copying the file. Check `.turbine/runs/` logs for details.
 
 To enable true symlinks:
+
 1. Enable Developer Mode (recommended)
 2. Or run as administrator
 3. Or upgrade to Windows 11 with Developer Mode enabled

@@ -5,7 +5,7 @@ import "fmt"
 const explorerRole = `You are a codebase analyst. Your job is to explore this repository and understand its patterns, conventions, and development practices.
 
 Your Task
-Explore the codebase to gather context that will inform task planning. Do NOT create any files yet.
+Explore the codebase and the current progress log to gather context that will inform task planning. Do NOT create any files yet.
 
 What to Look For
 1. **Project type**: Is this a greenfield project (empty/minimal) or an existing codebase?
@@ -19,6 +19,7 @@ What to Look For
 7. **Documentation**: AGENTS.md, README, docs/ folder, inline comments
 8. **Dependencies**: What frameworks/libraries are used?
 9. **Git history**: Recent commit message patterns (Conventional Commits?)
+10. **Progress log**: What has already been completed? What remains?
 
 How to Explore
 - Use file listing and reading tools to examine the codebase
@@ -27,44 +28,47 @@ How to Explore
 - Read any documentation files
 
 Output
-Summarize your findings. This context will be used in the next step to generate appropriate tasks.`
+Summarize your findings. This context will be used in the next step to generate the next task.`
 
-const decomposerRole = `You are a task decomposer. Convert PRDs into executable task plans.
+const plannerRole = `You are a task planner. Convert PRDs and progress logs into a single executable task.
 
 Your Task
-Convert a PRD (Markdown) into a YAML file containing a dependency-aware task DAG.
+Convert a PRD (Markdown) and progress log into a YAML file containing the next task to execute.
 
 You MUST write the file directly using your file writing tools. Do NOT output YAML as text.
 
 Required Actions
 1. Create directory if needed: mkdir -p .turbine
-2. Write the tasks file to: .turbine/tasks.yaml
+2. Write the task file to: .turbine/task.yaml
 
 Execution Model
-- Each task will be executed by a separate autonomous agent session.
+- The task will be executed by a separate autonomous agent session.
 - The executor cannot ask questions or request clarification during execution.
-- Tasks must be fully self-contained with all context needed for implementation.
+- The task must be fully self-contained with all context needed for implementation.
 - If the PRD has ambiguity, YOU must decide now. Do NOT create "clarify/decide" tasks.
 
 Principles
-- Prefer the smallest task graph that is still complete and testable.
+- Prefer the smallest task that is still complete and testable.
 - Avoid speculative tasks unless explicitly in-scope in the PRD.
-- Use deps to enforce correct execution order.
-- Apply patterns and conventions discovered during codebase exploration.
+- Apply patterns and conventions discovered during codebase exploration and the progress log.
 
 YAML Schema
 The file MUST conform to this schema:
 
 version: 1
-tasks:
-  - id: string (required, unique; format T-001, T-002, ...)
-    title: string (required)
-    status: todo|done|failed (required; default to todo for all generated tasks)
-    deps: [string] (optional; each must reference an existing task id)
-    description: string (required for leaf tasks; use YAML block scalar | when >1 line)
-    acceptance: [string] (strongly preferred; 3-5 testable statements)
-    verify: [string] (optional; ordered list of shell commands as strings)
-    commit_message: string (required; Conventional Commits first line)
+task:
+  id: string (required, unique; format T-001, T-002, ...)
+  title: string (required)
+  status: todo|done|failed (required; default to todo)
+  description: string (required; use YAML block scalar | when >1 line)
+  acceptance: [string] (strongly preferred; 3-5 testable statements)
+  verify: [string] (optional; ordered list of shell commands as strings)
+  commit_message: string (required for todo/failed; Conventional Commits first line)
+
+Completion
+- If the PRD is fully implemented given the progress log, set status: done.
+- Provide a short description explaining why there is no remaining work.
+- commit_message may be empty for status: done.
 
 YAML Syntax Rules
 - When array items contain quotes, quote the ENTIRE value.
@@ -77,11 +81,7 @@ Task Size
 - If a requirement implies multiple independently verifiable items, split into separate tasks.
 
 File Paths
-- Every task description MUST specify exact file paths to create or modify.
-
-Dependencies
-- Scaffolding tasks must come before feature tasks.
-- Prefer explicit deps over relying on creation order.
+- The task description MUST specify exact file paths to create or modify.
 
 Do Not Generate Tasks That:
 - Require human decisions ("Decide whether...", "Clarify...")
@@ -104,13 +104,12 @@ Verify Commands
 
 Before Writing
 Validate that:
-- All deps reference existing task IDs; no cycles.
-- Every task has file-specific description.
-- commit_message present for every task and matches Conventional Commits format.
+- The task has a file-specific description.
+- commit_message present for todo/failed tasks and matches Conventional Commits format.
 - Verify commands are consistent with file paths.
 
 BEGIN
-Read the PRD below and write .turbine/tasks.yaml now.`
+Read the PRD and progress log below and write .turbine/task.yaml now.`
 
 const methodologyPlanning = `# Task Planning Methodology
 
@@ -153,7 +152,6 @@ Every task MUST include:
 - Each task completable in a single session
 - If requirement implies multiple verifiable items, split into separate tasks
 - Scaffolding tasks before feature tasks
-- Explicit deps over relying on creation order
 
 ## Do Not Create Tasks That:
 
@@ -175,52 +173,55 @@ Every task MUST include:
 ## Before Finalizing
 
 Validate that:
-- All deps reference existing task IDs; no cycles
-- Every task has file-specific description
-- commit_message present for every task (Conventional Commits)
+- The task has a file-specific description
+- commit_message present for todo/failed tasks (Conventional Commits)
 - Verify commands consistent with file paths`
 
 const methodHeader = "# Required Methodologies\n\nFollow these methodologies for this task:"
 
 const explorePromptTemplate = "%s\n\n---\n\n" +
 	"## PRD to Implement:\n\n%s\n\n" +
+	"## Progress Log:\n\n%s\n\n" +
 	"## Instructions\n\n" +
-	"Explore this repository to understand its patterns and conventions BEFORE we create tasks.\n\n" +
+	"Explore this repository and progress log to understand its patterns and conventions BEFORE we create the next task.\n\n" +
 	"Focus on:\n" +
 	"1. Is this greenfield or an existing project?\n" +
 	"2. What development patterns are used (TDD, testing frameworks, etc.)?\n" +
 	"3. What coding conventions should new code follow?\n" +
-	"4. How are commits typically structured?\n\n" +
+	"4. How are commits typically structured?\n" +
+	"5. What has already been completed per the progress log?\n\n" +
 	"Do NOT create any files. Just explore and summarize your findings."
 
-const decomposePromptTemplate = "%s\n\n---\n\n" +
+const planPromptTemplate = "%s\n\n---\n\n" +
 	methodHeader + "\n\n" + methodologyPlanning + "\n\n---\n\n" +
 	"## PRD Content:\n\n%s\n\n" +
+	"## Progress Log:\n\n%s\n\n" +
 	"## Instructions\n\n" +
-	"Now create the tasks file based on your exploration findings.\n\n" +
-	"Write the tasks file to: %s\n\n" +
+	"Now create the next task based on your exploration findings and the progress log.\n\n" +
+	"Write the task file to: %s\n\n" +
 	"Use your file writing tools to create the file. Do NOT output YAML as text.\n" +
 	"Create the .turbine directory first if it doesn't exist: mkdir -p .turbine\n\n" +
 	"IMPORTANT: Apply the patterns and conventions you discovered during exploration."
 
-const decomposeFixPromptTemplate = "%s\n\n---\n\n" +
+const planFixPromptTemplate = "%s\n\n---\n\n" +
 	methodHeader + "\n\n" + methodologyPlanning + "\n\n---\n\n" +
-	"## Task: Fix Invalid .turbine/tasks.yaml\n\n" +
+	"## Task: Fix Invalid .turbine/task.yaml\n\n" +
 	"The generated YAML file is invalid. Fix the file directly using your file writing tools.\n\n" +
 	"### PRD Content\n%s\n\n" +
+	"### Progress Log\n%s\n\n" +
 	"### Current File Content (Invalid)\n```yaml\n%s\n```\n\n" +
 	"### Validation Errors\n```\n%s\n```\n\n" +
-	"Fix the errors and overwrite .turbine/tasks.yaml with the corrected content.\n" +
+	"Fix the errors and overwrite .turbine/task.yaml with the corrected content.\n" +
 	"Use your file writing tools. Do NOT output YAML as text."
 
-func buildExplorePrompt(prdContent string) string {
-	return fmt.Sprintf(explorePromptTemplate, explorerRole, prdContent)
+func buildExplorePrompt(prdContent, progressContent string) string {
+	return fmt.Sprintf(explorePromptTemplate, explorerRole, prdContent, progressContent)
 }
 
-func buildDecomposePrompt(prdContent, outputPath string) string {
-	return fmt.Sprintf(decomposePromptTemplate, decomposerRole, prdContent, outputPath)
+func buildPlanPrompt(prdContent, progressContent, outputPath string) string {
+	return fmt.Sprintf(planPromptTemplate, plannerRole, prdContent, progressContent, outputPath)
 }
 
-func buildDecomposeFixPrompt(prdContent, failedYAML, validationError string) string {
-	return fmt.Sprintf(decomposeFixPromptTemplate, decomposerRole, prdContent, failedYAML, validationError)
+func buildPlanFixPrompt(prdContent, progressContent, failedYAML, validationError string) string {
+	return fmt.Sprintf(planFixPromptTemplate, plannerRole, prdContent, progressContent, failedYAML, validationError)
 }

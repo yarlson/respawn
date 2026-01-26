@@ -8,32 +8,38 @@ import (
 
 func TestBuildExplorePrompt(t *testing.T) {
 	prd := "Build a rocket."
-	result := buildExplorePrompt(prd)
+	progress := "- 2026-01-26T00:00:00Z Initialized"
+	result := buildExplorePrompt(prd, progress)
 
 	assert.Contains(t, result, prd)
+	assert.Contains(t, result, progress)
 	assert.Contains(t, result, "codebase analyst")
 	assert.Contains(t, result, "Do NOT create any files")
 }
 
-func TestBuildDecomposePrompt(t *testing.T) {
+func TestBuildPlanPrompt(t *testing.T) {
 	prd := "Build a rocket."
-	path := ".turbine/tasks.yaml"
-	result := buildDecomposePrompt(prd, path)
+	progress := "- 2026-01-26T00:00:00Z Initialized"
+	path := ".turbine/task.yaml"
+	result := buildPlanPrompt(prd, progress, path)
 
 	assert.Contains(t, result, prd)
+	assert.Contains(t, result, progress)
 	assert.Contains(t, result, path)
-	assert.Contains(t, result, "task decomposer")
+	assert.Contains(t, result, "task planner")
 	assert.Contains(t, result, "Task Planning Methodology")
 }
 
-func TestBuildDecomposeFixPrompt(t *testing.T) {
+func TestBuildPlanFixPrompt(t *testing.T) {
 	prd := "Build a rocket."
+	progress := "- 2026-01-26T00:00:00Z Initialized"
 	failed := "invalid: yaml"
 	errMsg := "missing fields"
-	result := buildDecomposeFixPrompt(prd, failed, errMsg)
+	result := buildPlanFixPrompt(prd, progress, failed, errMsg)
 
 	assert.Contains(t, result, prd)
+	assert.Contains(t, result, progress)
 	assert.Contains(t, result, failed)
 	assert.Contains(t, result, errMsg)
-	assert.Contains(t, result, "Fix Invalid .turbine/tasks.yaml")
+	assert.Contains(t, result, "Fix Invalid .turbine/task.yaml")
 }

@@ -3,26 +3,31 @@ package run
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	relay "github.com/yarlson/relay"
 	"github.com/yarlson/turbine/internal/gitx"
-	relaystore "github.com/yarlson/turbine/internal/relay/store"
+	filestore "github.com/yarlson/turbine/internal/relay/store"
+	"github.com/yarlson/turbine/internal/relay/stream"
 	"github.com/yarlson/turbine/internal/tasks"
 	"github.com/yarlson/turbine/internal/ui"
 )
 
-// ExecuteTask selects and executes the next runnable task using the provided model and variant.
+// ExecuteTask executes the currently loaded task.
 func (r *Runner) ExecuteTask(ctx context.Context, backend relay.Provider, model, variant string) error {
-	task := r.NextRunnableTask()
-	if task == nil {
-		return fmt.Errorf("no runnable tasks found")
+	if r.TaskFile == nil {
+		return fmt.Errorf("no active task loaded")
 	}
-	return r.ExecuteTaskWithTask(ctx, backend, task, model, variant)
+	return r.ExecuteTaskWithTask(ctx, backend, &r.TaskFile.Task, model, variant)
 }
 
 // ExecuteTaskWithTask executes a single task with the given model and variant.
 func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend relay.Provider, task *tasks.Task, model, variant string) error {
+	if r.TaskFile == nil {
+		return fmt.Errorf("no active task file loaded")
+	}
+
 	fmt.Printf("%s %s\n", ui.Section("›", ui.Bold(task.Title)), ui.Dim(fmt.Sprintf("[%s]", task.ID)))
 
 	policy := &RetryPolicy{
@@ -60,7 +65,8 @@ func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend relay.Provider
 		fullPrompt := buildTaskPrompt(execCtx, userPrompt)
 
 		workflowID := fmt.Sprintf("%s-%s", r.State.RunID, task.ID)
-		exec := relay.NewExecutor(backend, relay.WithStore(relaystore.New(r.RepoRoot)))
+		store := filestore.New(r.RepoRoot)
+		exec := relay.NewExecutor(backend, relay.WithStore(store))
 		workflow := &relay.Workflow{
 			ID:         workflowID,
 			WorkingDir: r.RepoRoot,
@@ -89,7 +95,7 @@ func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend relay.Provider
 			},
 		}
 
-		if err := runWorkflow(ctx, exec, workflow); err != nil {
+		if err := runWorkflow(ctx, exec, workflow, store); err != nil {
 			return fmt.Errorf("backend failed: %w", err)
 		}
 
@@ -104,9 +110,9 @@ func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend relay.Provider
 		fmt.Printf("%s %s\n  %s\n", ui.FailureMarker(), ui.Bold(task.Title), ui.Red(fmt.Sprintf("Failed after max rotations: %v", err)))
 	}
 
-	tasksPath := filepath.Join(r.RepoRoot, ".turbine", "tasks.yaml")
-	if saveErr := r.Tasks.Save(tasksPath); saveErr != nil {
-		return fmt.Errorf("save tasks: %w", saveErr)
+	taskPath := filepath.Join(r.RepoRoot, TaskRelPath)
+	if saveErr := r.TaskFile.Save(taskPath); saveErr != nil {
+		return fmt.Errorf("save task: %w", saveErr)
 	}
 
 	if err == nil {
@@ -118,21 +124,45 @@ func (r *Runner) ExecuteTaskWithTask(ctx context.Context, backend relay.Provider
 		}
 		fmt.Printf("  %s %s\n", ui.SuccessMarker(), ui.Dim(hash))
 
+		entry := fmt.Sprintf("- %s %s %s - done (commit %s)", timeNowUTC(), task.ID, task.Title, hash)
+		if err := AppendProgress(r.RepoRoot, entry); err != nil {
+			return err
+		}
+		if _, err := ArchiveTaskFile(r.RepoRoot, r.TaskFile); err != nil {
+			return err
+		}
+		if err := os.Remove(taskPath); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("remove task file: %w", err)
+		}
+
 		// Update last save point for next task
 		r.State.LastSavepointCommit = hash
 		r.State.ActiveTaskID = "" // Reset for next task
 		r.State.BackendSessionID = ""
 	}
 
+	if err != nil {
+		entry := fmt.Sprintf("- %s %s %s - failed", timeNowUTC(), task.ID, task.Title)
+		if progressErr := AppendProgress(r.RepoRoot, entry); progressErr != nil {
+			return progressErr
+		}
+	}
+
 	return err
 }
 
-func runWorkflow(ctx context.Context, exec *relay.Executor, workflow *relay.Workflow) error {
+func runWorkflow(ctx context.Context, exec *relay.Executor, workflow *relay.Workflow, store *filestore.FileStore) error {
 	events := make(chan relay.Event, 256)
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		for range events {
+		if store == nil || workflow.ID == "" {
+			for range events {
+			}
+			return
+		}
+		for evt := range events {
+			stream.AppendEvent(ctx, store, workflow.ID, evt)
 		}
 	}()
 
@@ -140,43 +170,4 @@ func runWorkflow(ctx context.Context, exec *relay.Executor, workflow *relay.Work
 	close(events)
 	<-done
 	return err
-}
-
-// NextRunnableTask returns the first task that is 'todo' and has all dependencies 'done'.
-func (r *Runner) NextRunnableTask() *tasks.Task {
-	// Map tasks by ID for dependency checking
-	taskMap := make(map[string]tasks.Task)
-	for _, t := range r.Tasks.Tasks {
-		taskMap[t.ID] = t
-	}
-
-	for i, t := range r.Tasks.Tasks {
-		if t.Status != tasks.StatusTodo {
-			continue
-		}
-
-		runnable := true
-		for _, depID := range t.Deps {
-			dep, ok := taskMap[depID]
-			if !ok || dep.Status != tasks.StatusDone {
-				runnable = false
-				break
-			}
-		}
-
-		if runnable {
-			return &r.Tasks.Tasks[i]
-		}
-	}
-	return nil
-}
-
-// FindTaskByID returns a task by its ID.
-func (r *Runner) FindTaskByID(id string) *tasks.Task {
-	for i, t := range r.Tasks.Tasks {
-		if t.ID == id {
-			return &r.Tasks.Tasks[i]
-		}
-	}
-	return nil
 }

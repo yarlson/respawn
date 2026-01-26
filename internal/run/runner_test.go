@@ -7,6 +7,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	relay "github.com/yarlson/relay"
+
+	"github.com/yarlson/turbine/internal/config"
+	"github.com/yarlson/turbine/internal/state"
 	"github.com/yarlson/turbine/internal/tasks"
 
 	"github.com/stretchr/testify/assert"
@@ -49,21 +53,20 @@ func setupTestRepo(t *testing.T) string {
 func TestRunner_Preflight(t *testing.T) {
 	ctx := context.Background()
 
-	t.Run("missing tasks.yaml", func(t *testing.T) {
+	t.Run("missing prd file", func(t *testing.T) {
 		repoDir := setupTestRepo(t)
 		_, err := NewRunner(ctx, Config{Cwd: repoDir})
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "task manifest not found")
+		assert.Contains(t, err.Error(), "PRD file not found")
 	})
 
 	t.Run("dirty tree error", func(t *testing.T) {
 		repoDir := setupTestRepo(t)
 
-		// Create .turbine/tasks.yaml
+		// Create .turbine/prd.md
 		err := os.MkdirAll(filepath.Join(repoDir, ".turbine"), 0755)
 		require.NoError(t, err)
-		taskList := tasks.TaskList{Version: 1, Tasks: []tasks.Task{{ID: "T1", Status: tasks.StatusTodo}}}
-		err = taskList.Save(filepath.Join(repoDir, ".turbine", "tasks.yaml"))
+		err = os.WriteFile(filepath.Join(repoDir, ".turbine", "prd.md"), []byte("Test PRD"), 0644)
 		require.NoError(t, err)
 
 		// Make it dirty with an UNTRACKED file that is NOT ignored
@@ -78,15 +81,20 @@ func TestRunner_Preflight(t *testing.T) {
 	t.Run("resume bypasses dirty check", func(t *testing.T) {
 		repoDir := setupTestRepo(t)
 
-		// Create .turbine/tasks.yaml
+		// Create .turbine/prd.md and .turbine/task.yaml
 		err := os.MkdirAll(filepath.Join(repoDir, ".turbine", "state"), 0755)
 		require.NoError(t, err)
-		taskList := tasks.TaskList{Version: 1, Tasks: []tasks.Task{{ID: "T1", Status: tasks.StatusTodo}}}
-		err = taskList.Save(filepath.Join(repoDir, ".turbine", "tasks.yaml"))
+		err = os.WriteFile(filepath.Join(repoDir, ".turbine", "prd.md"), []byte("Test PRD"), 0644)
+		require.NoError(t, err)
+		taskFile := &tasks.TaskFile{
+			Version: 1,
+			Task:    tasks.Task{ID: "T1", Title: "Task 1", Status: tasks.StatusTodo, Description: "desc", CommitMessage: "feat: t1"},
+		}
+		err = taskFile.Save(filepath.Join(repoDir, ".turbine", "task.yaml"))
 		require.NoError(t, err)
 
 		// Create resume state
-		err = os.WriteFile(filepath.Join(repoDir, ".turbine", "state", "run.json"), []byte(`{"run_id": "test"}`), 0644)
+		err = os.WriteFile(filepath.Join(repoDir, ".turbine", "state", "run.json"), []byte(`{"run_id": "test", "active_task_id": "T1"}`), 0644)
 		require.NoError(t, err)
 
 		// Make it dirty
@@ -107,8 +115,7 @@ func TestRunner_Preflight(t *testing.T) {
 
 		err = os.MkdirAll(filepath.Join(repoDir, ".turbine"), 0755)
 		require.NoError(t, err)
-		taskList := tasks.TaskList{Version: 1, Tasks: []tasks.Task{{ID: "T1", Status: tasks.StatusTodo}}}
-		err = taskList.Save(filepath.Join(repoDir, ".turbine", "tasks.yaml"))
+		err = os.WriteFile(filepath.Join(repoDir, ".turbine", "prd.md"), []byte("Test PRD"), 0644)
 		require.NoError(t, err)
 
 		// Commit them so the tree is clean for preflight
@@ -124,7 +131,7 @@ func TestRunner_Preflight(t *testing.T) {
 			out, err := cmd.CombinedOutput()
 			require.NoError(t, err, "failed to run %s %v: %s", name, args, string(out))
 		}
-		runCmd("git", "add", ".gitignore", ".turbine/tasks.yaml")
+		runCmd("git", "add", ".gitignore", ".turbine/prd.md")
 		runCmd("git", "commit", "-m", "prepare for ignore test", "--no-gpg-sign")
 
 		// Preflight with auto-add
@@ -140,17 +147,115 @@ func TestRunner_Preflight(t *testing.T) {
 }
 
 func TestRunner_PrintSummary(t *testing.T) {
-	taskList := &tasks.TaskList{
-		Tasks: []tasks.Task{
-			{ID: "T1", Status: tasks.StatusDone},
-			{ID: "T2", Status: tasks.StatusTodo},
-			{ID: "T3", Status: tasks.StatusTodo, Deps: []string{"T2"}},
-			{ID: "T4", Status: tasks.StatusFailed},
-		},
+	taskFile := &tasks.TaskFile{
+		Version: 1,
+		Task:    tasks.Task{ID: "T1", Title: "Task 1", Status: tasks.StatusTodo, Description: "desc", CommitMessage: "feat: t1"},
 	}
-	runner := &Runner{Tasks: taskList}
+	runner := &Runner{TaskFile: taskFile}
 
 	// This just verifies it doesn't panic and prints something
 	// In a more thorough test we could capture stdout
 	runner.PrintSummary()
+}
+
+func TestRunner_Run_ExitCodes(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("success all tasks", func(t *testing.T) {
+		repoDir := setupTestRepo(t)
+		tasksDir := filepath.Join(repoDir, ".turbine")
+		require.NoError(t, os.MkdirAll(tasksDir, 0755))
+		prdPath := filepath.Join(tasksDir, "prd.md")
+		require.NoError(t, os.WriteFile(prdPath, []byte("Test PRD"), 0644))
+		progressPath := filepath.Join(tasksDir, "progress.md")
+		require.NoError(t, os.WriteFile(progressPath, []byte("# Progress\n"), 0644))
+
+		taskFile := &tasks.TaskFile{
+			Version: 1,
+			Task: tasks.Task{
+				ID:            "T1",
+				Title:         "Task 1",
+				Status:        tasks.StatusTodo,
+				Description:   "Description 1",
+				Verify:        []string{"true"},
+				CommitMessage: "feat: task 1",
+			},
+		}
+		taskPath := filepath.Join(tasksDir, "task.yaml")
+		require.NoError(t, taskFile.Save(taskPath))
+
+		r := &Runner{
+			RepoRoot:     repoDir,
+			TaskFile:     taskFile,
+			State:        &state.RunState{RunID: "test-run"},
+			Config:       config.Defaults{Retry: config.Retry{Strokes: 1, Rotations: 1}},
+			PRDPath:      prdPath,
+			ProgressPath: progressPath,
+		}
+
+		mock := &mockProvider{runFunc: func(_ context.Context, params relay.RunParams, _ chan<- relay.Event) error {
+			taskPath := filepath.Join(params.WorkingDir, TaskRelPath)
+			if _, err := os.Stat(taskPath); os.IsNotExist(err) {
+				doneTask := &tasks.TaskFile{
+					Version: 1,
+					Task: tasks.Task{
+						ID:          "T-DONE",
+						Title:       "No remaining work",
+						Status:      tasks.StatusDone,
+						Description: "All PRD requirements satisfied.",
+					},
+				}
+				return doneTask.Save(taskPath)
+			}
+			return nil
+		}}
+		err := r.Run(ctx, mock, Models{Fast: config.Model{Name: "claude-3-5-sonnet"}, Slow: config.Model{Name: "claude-4-5-opus"}})
+		assert.NoError(t, err)
+
+		// Verify state is cleared
+		_, exists, err := state.Load(repoDir)
+		assert.NoError(t, err)
+		assert.False(t, exists)
+
+		// Verify task file removed after success
+		_, err = os.Stat(taskPath)
+		assert.True(t, os.IsNotExist(err))
+	})
+
+	t.Run("failure returns error", func(t *testing.T) {
+		repoDir := setupTestRepo(t)
+		tasksDir := filepath.Join(repoDir, ".turbine")
+		require.NoError(t, os.MkdirAll(tasksDir, 0755))
+
+		taskFile := &tasks.TaskFile{
+			Version: 1,
+			Task: tasks.Task{
+				ID:            "T1",
+				Title:         "Task 1",
+				Status:        tasks.StatusTodo,
+				Description:   "Description 1",
+				Verify:        []string{"false"},
+				CommitMessage: "feat: task 1",
+			},
+		}
+		taskPath := filepath.Join(tasksDir, "task.yaml")
+		require.NoError(t, taskFile.Save(taskPath))
+
+		r := &Runner{
+			RepoRoot: repoDir,
+			TaskFile: taskFile,
+			State:    &state.RunState{RunID: "test-run"},
+			Config:   config.Defaults{Retry: config.Retry{Strokes: 1, Rotations: 1}},
+		}
+
+		mock := &mockProvider{}
+		err := r.Run(ctx, mock, Models{Fast: config.Model{Name: "claude-3-5-sonnet"}, Slow: config.Model{Name: "claude-4-5-opus"}})
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed after 1 rotations")
+
+		// Verify state kept for resume
+		_, exists, err := state.Load(repoDir)
+		assert.NoError(t, err)
+		assert.True(t, exists)
+	})
 }

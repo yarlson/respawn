@@ -11,29 +11,29 @@ If the file is missing, Turbine uses built-in defaults.
 
 ```yaml
 defaults:
-  backend: opencode          # Default backend to use
-  quiet: false               # Suppress output
+  backend: opencode # Default backend to use
+  quiet: false # Suppress output
   retry:
-    rotations: 3             # Number of new-session rotations
-    strokes: 3               # Number of strokes per rotation
+    rotations: 3 # Number of new-session rotations
+    strokes: 3 # Number of strokes per rotation
 
 backends:
   claude:
-    command: claude          # Command to invoke the backend
-    args:                    # Additional arguments
+    command: claude # Command to invoke the backend
+    args: # Additional arguments
       - -p
       - --dangerously-skip-permissions
     models:
-      fast: claude-3-5-sonnet-latest    # Model for task execution
-      slow: claude-4-5-opus-latest      # Model for planning (AGENTS.md, tasks.yaml)
-    variant: ""              # Optional backend-specific variant
+      fast: claude-3-5-sonnet-latest # Model for task execution
+      slow: claude-4-5-opus-latest # Model for planning (AGENTS.md, task planning)
+    variant: "" # Optional backend-specific variant
 
   opencode:
     command: opencode
     args: []
     models:
-      fast: anthropic/claude-sonnet     # Model for task execution
-      slow: anthropic/claude-opus-4-5   # Model for planning
+      fast: anthropic/claude-sonnet # Model for task execution
+      slow: anthropic/claude-opus-4-5 # Model for planning
     variant: ""
 ```
 
@@ -76,11 +76,12 @@ Turbine uses different models for different operations:
 Used for one-time, high-stakes operations that benefit from higher quality:
 
 - `turbine agents` - Generates AGENTS.md with methodology selection and project guidelines
-- `turbine load` - Decomposes PRD into `.turbine/tasks.yaml`
+- `turbine` (planning phase) - Plans the next task into `.turbine/task.yaml`
 
 These operations happen once per project and produce artifacts used throughout development, so quality is prioritized over cost.
 
 **Recommended models:**
+
 - Claude: `claude-4-5-opus-latest`
 - OpenCode: `anthropic/claude-opus-4-5`
 
@@ -88,12 +89,13 @@ These operations happen once per project and produce artifacts used throughout d
 
 Used for repetitive implementation work during task execution:
 
-- `turbine run` - Executes individual tasks from the task manifest
+- `turbine` (execution phase) - Executes the current task from `.turbine/task.yaml`
 - Interactive fixes and retries
 
 These operations happen frequently, so cost and speed are prioritized while maintaining sufficient quality for implementation.
 
 **Recommended models:**
+
 - Claude: `claude-3-5-sonnet-latest`
 - OpenCode: `anthropic/claude-sonnet`
 
@@ -103,13 +105,13 @@ Override configuration at runtime using CLI flags:
 
 ```bash
 # Use a specific backend
-turbine load --prd PRD.md --backend claude
+turbine --prd PRD.md --backend claude
 
 # Use a specific model for the current operation
 turbine agents --prd PRD.md --model claude-opus-4-5
 
 # Use fast variant explicitly
-turbine load --prd PRD.md --variant fast
+turbine --prd PRD.md --variant fast
 
 # Combine multiple overrides
 turbine --backend claude --model claude-3-5-sonnet
@@ -117,10 +119,10 @@ turbine --backend claude --model claude-3-5-sonnet
 
 ## Environment Variables
 
-| Variable          | Purpose                              | Example                    |
-| ----------------- | ------------------------------------ | -------------------------- |
-| `XDG_CONFIG_HOME` | Override config directory location   | `/home/user/.config`       |
-| `NO_COLOR`        | Disable colored terminal output      | (any value to disable)     |
+| Variable          | Purpose                            | Example                |
+| ----------------- | ---------------------------------- | ---------------------- |
+| `XDG_CONFIG_HOME` | Override config directory location | `/home/user/.config`   |
+| `NO_COLOR`        | Disable colored terminal output    | (any value to disable) |
 
 ## Examples
 
@@ -162,8 +164,8 @@ backends:
 defaults:
   backend: claude
   retry:
-    rotations: 5    # More rotations for critical projects
-    strokes: 2      # Fewer strokes per rotation
+    rotations: 5 # More rotations for critical projects
+    strokes: 2 # Fewer strokes per rotation
 ```
 
 ### Quiet Mode
@@ -171,7 +173,7 @@ defaults:
 ```yaml
 defaults:
   backend: claude
-  quiet: true    # Suppress all output except errors
+  quiet: true # Suppress all output except errors
 ```
 
 ## Troubleshooting

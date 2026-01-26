@@ -56,7 +56,7 @@ func (m *Model) UnmarshalYAML(unmarshal func(interface{}) error) error {
 // Models holds model configurations for different use cases.
 type Models struct {
 	Fast Model `yaml:"fast"` // Used for implementation tasks
-	Slow Model `yaml:"slow"` // Used for AGENTS.md and tasks.yaml generation
+	Slow Model `yaml:"slow"` // Used for AGENTS.md and task planning
 }
 
 // Backend holds configuration for a specific agent backend.

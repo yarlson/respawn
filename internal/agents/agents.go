@@ -6,6 +6,8 @@ import (
 	"os"
 
 	relay "github.com/yarlson/relay"
+	filestore "github.com/yarlson/turbine/internal/relay/store"
+	"github.com/yarlson/turbine/internal/relay/stream"
 )
 
 type Generator struct {
@@ -68,7 +70,14 @@ func (g *Generator) runWorkflow(ctx context.Context, exec *relay.Executor, workf
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		for range events {
+		if workflow.ID == "" {
+			for range events {
+			}
+			return
+		}
+		store := filestore.New(g.repoRoot)
+		for evt := range events {
+			stream.AppendEvent(ctx, store, workflow.ID, evt)
 		}
 	}()
 

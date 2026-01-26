@@ -1,6 +1,6 @@
 # AGENTS.md — Turbine Engineering Rules
 
-Turbine is a minimal Go-based harness for executing autonomous tasks from `.turbine/tasks.yaml`.
+Turbine is a minimal Go-based harness for planning and executing the next task from `.turbine/task.yaml` and `.turbine/progress.md`.
 
 ## Core Stack
 
@@ -9,8 +9,7 @@ Turbine is a minimal Go-based harness for executing autonomous tasks from `.turb
 
 ## Primary Commands
 
-- **Runner**: `turbine`
-- **Decomposer**: `turbine load --prd <path> [--yes]`
+- **Runner**: `turbine --prd <path> [--yes]`
 - **AGENTS.md Generator**: `turbine agents --prd <path> [--yes]`
 
 ## Guidelines (Progressive Disclosure)
